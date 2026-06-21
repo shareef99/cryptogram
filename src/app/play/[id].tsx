@@ -188,14 +188,37 @@ export default function PlayScreen() {
                 onPress={handleDoubleIt}
                 disabled={doubling}
                 style={[styles.button, styles.doubleButton, { backgroundColor: theme.coin, opacity: doubling ? 0.6 : 1 }]}>
-                <ThemedText style={styles.buttonText}>
+                <ThemedText style={[styles.buttonText, styles.darkButtonText]}>
                   {doubling ? 'Loading ad…' : '✨ Double it (watch ad)'}
                 </ThemedText>
               </Pressable>
             )}
 
             <Pressable onPress={handleNext} style={[styles.button, styles.winButton]}>
-              <ThemedText style={styles.buttonText}>Next puzzle</ThemedText>
+              <ThemedText style={[styles.buttonText, { color: theme.success }]}>Next puzzle</ThemedText>
+            </Pressable>
+          </Animated.View>
+        )}
+
+        {status === 'lost' && (
+          <Animated.View
+            entering={ZoomIn.springify().damping(14)}
+            style={[styles.winBanner, { backgroundColor: theme.danger }]}>
+            <ThemedText themeColor="primaryText" style={styles.winTitle}>
+              Out of guesses 😕
+            </ThemedText>
+            <ThemedText themeColor="primaryText" style={styles.winAuthor}>
+              Better luck on the next one!
+            </ThemedText>
+            <Pressable
+              onPress={() => loadPuzzle(quoteId != null ? String(quoteId) : 'new')}
+              style={[styles.button, styles.winButton, styles.lostButton]}>
+              <ThemedText style={[styles.buttonText, { color: theme.danger }]}>Try again</ThemedText>
+            </Pressable>
+            <Pressable onPress={() => router.back()} style={[styles.button, styles.lostBack]}>
+              <ThemedText themeColor="primaryText" style={styles.buttonText}>
+                Back home
+              </ThemedText>
             </Pressable>
           </Animated.View>
         )}
@@ -243,7 +266,10 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.four,
     alignItems: 'center',
   },
-  winButton: { backgroundColor: '#ffffff', marginTop: Spacing.two },
+  winButton: { backgroundColor: '#ffffff', marginTop: Spacing.two, alignSelf: 'stretch' },
   doubleButton: { marginTop: Spacing.two, alignSelf: 'stretch' },
+  darkButtonText: { color: '#1a1205' },
+  lostButton: { backgroundColor: '#ffffff' },
+  lostBack: { alignSelf: 'stretch' },
   buttonText: { fontSize: 17, fontWeight: '700' },
 });

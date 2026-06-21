@@ -1,52 +1,42 @@
 /**
- * Puzzle screen header: back button, difficulty label, and letters-solved
- * progress. (Coins and hint controls are added in later phases.)
+ * Puzzle screen header: back button and remaining lives (hearts). The letter
+ * count is intentionally hidden.
  */
 
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { solvedCodeCount } from '@/game';
 import { useTheme } from '@/hooks/use-theme';
-import { useGameStore } from '@/store/game-store';
-
-const DIFFICULTY_LABEL = ['', 'Easy', 'Medium', 'Hard'];
+import { MAX_MISTAKES, useGameStore } from '@/store/game-store';
 
 function GameHeaderInner() {
   const theme = useTheme();
-  const total = useGameStore((s) => s.puzzle?.codes.length ?? 0);
-  const solved = useGameStore((s) =>
-    s.puzzle ? solvedCodeCount(s.puzzle, s.guesses) : 0,
-  );
+  const mistakes = useGameStore((s) => s.mistakes);
+  const remaining = MAX_MISTAKES - mistakes;
 
   return (
     <View style={styles.header}>
       <Pressable onPress={() => router.back()} hitSlop={8} style={styles.back}>
-        <ThemedText style={styles.backIcon}>‹</ThemedText>
+        <Ionicons name="chevron-back" size={28} color={theme.text} />
       </Pressable>
+
       <Pressable
         onLongPress={__DEV__ ? () => useGameStore.getState().__devSolve() : undefined}
-        style={styles.center}>
-        <ThemedText themeColor="textSecondary" type="small">
-          {total > 0 ? `${solved} / ${total} letters` : ' '}
-        </ThemedText>
-      </Pressable>
-      <View style={styles.right}>
-        <View style={[styles.progressTrack, { backgroundColor: theme.backgroundElement }]}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                backgroundColor: theme.primary,
-                width: total > 0 ? `${(solved / total) * 100}%` : '0%',
-              },
-            ]}
+        style={styles.lives}>
+        {Array.from({ length: MAX_MISTAKES }).map((_, i) => (
+          <Ionicons
+            key={i}
+            name={i < remaining ? 'heart' : 'heart-outline'}
+            size={22}
+            color={i < remaining ? theme.danger : theme.cellBorder}
           />
-        </View>
-      </View>
+        ))}
+      </Pressable>
+
+      <View style={styles.back} />
     </View>
   );
 }
@@ -57,37 +47,10 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    gap: Spacing.three,
   },
-  back: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backIcon: {
-    fontSize: 34,
-    lineHeight: 36,
-    fontWeight: '300',
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  right: {
-    width: 64,
-    alignItems: 'flex-end',
-  },
-  progressTrack: {
-    width: 64,
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
+  back: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  lives: { flexDirection: 'row', gap: Spacing.one },
 });

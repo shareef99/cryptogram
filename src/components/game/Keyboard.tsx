@@ -1,10 +1,11 @@
 /**
- * On-screen QWERTY keyboard wired to the game store. Tapping a key assigns that
- * letter to the selected cell; the delete key clears it. Letters already placed
- * somewhere are dimmed (a gentle hint that each letter maps to one code).
+ * On-screen QWERTY keyboard wired to the game store. Tapping a key validates the
+ * letter against the selected cell. The bottom row is flanked by left/right
+ * arrows that move the selection between cells (wrapping at the ends).
  */
 
-import { memo, useMemo } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
@@ -14,7 +15,7 @@ import { useGameStore } from '@/store/game-store';
 
 const ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
-function Key({ letter, used }: { letter: string; used: boolean }) {
+function Key({ letter }: { letter: string }) {
   const theme = useTheme();
   const inputLetter = useGameStore((s) => s.inputLetter);
   return (
@@ -25,43 +26,46 @@ function Key({ letter, used }: { letter: string; used: boolean }) {
       }}
       style={({ pressed }) => [
         styles.key,
-        { backgroundColor: theme.keyBackground, opacity: pressed ? 0.6 : used ? 0.45 : 1 },
+        { backgroundColor: theme.keyBackground, opacity: pressed ? 0.6 : 1 },
       ]}>
       <Text style={[styles.keyText, { color: theme.keyText }]}>{letter}</Text>
     </Pressable>
   );
 }
 
-function KeyboardInner() {
+function ArrowKey({ dir }: { dir: -1 | 1 }) {
   const theme = useTheme();
-  // Subscribe to the stable `guesses` reference (changes only on input), then
-  // derive the used-letters set here — never build a new object in the selector.
-  const guesses = useGameStore((s) => s.guesses);
-  const usedLetters = useMemo(() => new Set(Object.values(guesses)), [guesses]);
-  const deleteSelected = useGameStore((s) => s.deleteSelected);
+  const moveSelection = useGameStore((s) => s.moveSelection);
+  return (
+    <Pressable
+      onPress={() => {
+        haptics.tap();
+        moveSelection(dir);
+      }}
+      style={({ pressed }) => [
+        styles.key,
+        styles.arrow,
+        { backgroundColor: theme.keyBackground, opacity: pressed ? 0.6 : 1 },
+      ]}>
+      <Ionicons
+        name={dir === -1 ? 'chevron-back' : 'chevron-forward'}
+        size={22}
+        color={theme.keyText}
+      />
+    </Pressable>
+  );
+}
 
+function KeyboardInner() {
   return (
     <View style={styles.keyboard}>
       {ROWS.map((row, i) => (
         <View key={i} style={styles.row}>
-          {i === 2 && <View style={styles.spacer} />}
+          {i === 2 && <ArrowKey dir={-1} />}
           {row.split('').map((letter) => (
-            <Key key={letter} letter={letter} used={usedLetters.has(letter)} />
+            <Key key={letter} letter={letter} />
           ))}
-          {i === 2 && (
-            <Pressable
-              onPress={() => {
-                haptics.tap();
-                deleteSelected();
-              }}
-              style={({ pressed }) => [
-                styles.key,
-                styles.delete,
-                { backgroundColor: theme.keyBackground, opacity: pressed ? 0.6 : 1 },
-              ]}>
-              <Text style={[styles.keyText, { color: theme.keyText }]}>⌫</Text>
-            </Pressable>
-          )}
+          {i === 2 && <ArrowKey dir={1} />}
         </View>
       ))}
     </View>
@@ -81,9 +85,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
   },
-  spacer: {
-    flex: 0.5,
-  },
   key: {
     flex: 1,
     height: 46,
@@ -92,9 +93,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     maxWidth: 40,
   },
-  delete: {
-    flex: 1.5,
-    maxWidth: 56,
+  arrow: {
+    flex: 1.4,
+    maxWidth: 52,
   },
   keyText: {
     fontSize: 18,

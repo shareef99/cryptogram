@@ -1,9 +1,10 @@
 /**
- * Hint controls shown above the keyboard. In normal play: two buttons — "Reveal"
- * (coin-priced) and "Lucky Reveal" (scarce inventory). While Hint-1 pick mode is
- * active, it swaps to a prompt with "Surprise me" / "Cancel".
+ * Hint controls shown above the keyboard. Normal play: an icon "Reveal" button
+ * (coin-priced) and a "Lucky Reveal" button (scarce inventory). While Hint-1 pick
+ * mode is active, it swaps to a prompt with "Surprise me" / "Cancel".
  */
 
+import { Ionicons } from '@expo/vector-icons';
 import { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -29,8 +30,9 @@ function HintControlsInner({ quoteId }: { quoteId: number | null }) {
               styles.button,
               { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1 },
             ]}>
+            <Ionicons name="shuffle" size={18} color={theme.primaryText} />
             <ThemedText themeColor="primaryText" style={styles.buttonText}>
-              ✨ Surprise me
+              Surprise me
             </ThemedText>
           </Pressable>
           <Pressable
@@ -56,9 +58,9 @@ function HintControlsInner({ quoteId }: { quoteId: number | null }) {
           styles.button,
           { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : h.canAffordReveal ? 1 : 0.45 },
         ]}>
-        <ThemedText style={styles.buttonText}>Reveal</ThemedText>
+        <Ionicons name="bulb-outline" size={20} color={theme.text} />
         <View style={styles.cost}>
-          <ThemedText style={[styles.coinDot, { color: theme.coin }]}>●</ThemedText>
+          <Ionicons name="ellipse" size={11} color={theme.coin} />
           <ThemedText type="small" style={styles.costText}>
             {h.revealCost}
           </ThemedText>
@@ -72,7 +74,8 @@ function HintControlsInner({ quoteId }: { quoteId: number | null }) {
           styles.button,
           { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : h.hint2Count > 0 ? 1 : 0.45 },
         ]}>
-        <ThemedText style={styles.buttonText}>✨ Lucky Reveal</ThemedText>
+        <Ionicons name="sparkles" size={20} color={theme.streak} />
+        <ThemedText style={styles.buttonText}>Lucky</ThemedText>
         <View style={[styles.badge, { backgroundColor: theme.streak }]}>
           <ThemedText themeColor="primaryText" style={styles.badgeText}>
             {h.hint2Count}
@@ -100,8 +103,7 @@ const styles = StyleSheet.create({
   },
   outline: { borderWidth: 1.5, backgroundColor: 'transparent' },
   buttonText: { fontSize: 15, fontWeight: '700' },
-  cost: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  coinDot: { fontSize: 12 },
+  cost: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   costText: { fontWeight: '700' },
   badge: { minWidth: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   badgeText: { fontSize: 13, fontWeight: '800' },

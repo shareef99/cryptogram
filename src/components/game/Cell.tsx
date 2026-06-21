@@ -1,7 +1,7 @@
 /**
  * A single puzzle cell. Letter cells subscribe to ONLY their own store slices
- * (`guesses[code]`, `selectedCode === code`), so a keystroke re-renders just the
- * affected cells, not the whole grid. Symbol cells are static.
+ * (by cell id), so a keystroke re-renders just the affected cell. Correct letters
+ * lock in with a pop; a wrong guess flashes red and shakes.
  */
 
 import { memo, useEffect } from 'react';
@@ -14,52 +14,70 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Spacing } from '@/constants/theme';
-import { isCodeCorrect, type Cell as PuzzleCell } from '@/game';
+import type { Cell as PuzzleCell, LetterCell } from '@/game';
 import { useTheme } from '@/hooks/use-theme';
 import { useGameStore } from '@/store/game-store';
 
 export const CELL_WIDTH = 28;
 const CELL_HEIGHT = 34;
 
-function LetterCellView({ code }: { code: number }) {
+function LetterCellView({ cell }: { cell: LetterCell }) {
   const theme = useTheme();
-  const letter = useGameStore((s) => s.guesses[code] ?? '');
-  const selected = useGameStore((s) => s.selectedCode === code);
-  // Highlighted while Hint-1 pick mode is active and this cell isn't yet solved.
-  const highlighted = useGameStore((s) =>
-    s.hintMode === 'pick' && s.puzzle ? !isCodeCorrect(s.puzzle, s.guesses, code) : false,
-  );
+  const id = cell.id;
+  const letter = useGameStore((s) => s.cellGuesses[id] ?? '');
+  const selected = useGameStore((s) => s.selectedCellId === id);
+  const highlighted = useGameStore((s) => s.hintMode === 'pick' && !s.cellGuesses[id]);
+  const wrong = useGameStore((s) => s.wrongCellId === id);
   const pressCell = useGameStore((s) => s.pressCell);
 
-  // Quick scale-pop when a letter is placed (runs entirely on the UI thread).
   const scale = useSharedValue(1);
+  const shake = useSharedValue(0);
+
   useEffect(() => {
     if (letter) {
-      scale.value = withSequence(
-        withTiming(1.18, { duration: 90 }),
-        withTiming(1, { duration: 130 }),
-      );
+      scale.value = withSequence(withTiming(1.18, { duration: 90 }), withTiming(1, { duration: 130 }));
     }
   }, [letter, scale]);
-  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const backgroundColor = highlighted
-    ? theme.cellHighlight
-    : selected
-      ? theme.cellSelected
-      : theme.cellBackground;
-  const borderColor = highlighted
-    ? theme.coin
-    : selected
-      ? theme.cellSelectedBorder
-      : theme.cellBorder;
+  useEffect(() => {
+    if (wrong) {
+      shake.value = withSequence(
+        withTiming(-4, { duration: 50 }),
+        withTiming(4, { duration: 50 }),
+        withTiming(-3, { duration: 50 }),
+        withTiming(0, { duration: 50 }),
+      );
+    }
+  }, [wrong, shake]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }, { translateX: shake.value }],
+  }));
+
+  const solved = letter !== '';
+  const backgroundColor = wrong
+    ? theme.cellError
+    : highlighted
+      ? theme.cellHighlight
+      : selected
+        ? theme.cellSelected
+        : theme.cellBackground;
+  const borderColor = wrong
+    ? theme.cellError
+    : highlighted
+      ? theme.coin
+      : selected
+        ? theme.cellSelectedBorder
+        : theme.cellBorder;
 
   return (
-    <Pressable onPress={() => pressCell(code)} style={styles.letterCell} hitSlop={4}>
+    <Pressable onPress={() => pressCell(id)} style={styles.letterCell} hitSlop={4}>
       <Animated.View style={[styles.box, { backgroundColor, borderColor }, animatedStyle]}>
-        <Text style={[styles.letter, { color: theme.cellText }]}>{letter}</Text>
+        <Text style={[styles.letter, { color: solved ? theme.cellCorrect : theme.cellText }]}>
+          {letter}
+        </Text>
       </Animated.View>
-      <Text style={[styles.code, { color: theme.cellCode }]}>{code}</Text>
+      <Text style={[styles.code, { color: theme.cellCode }]}>{cell.code}</Text>
     </Pressable>
   );
 }
@@ -73,19 +91,15 @@ function SymbolCellView({ char }: { char: string }) {
   );
 }
 
-/** Renders the correct view for a puzzle cell. */
 function CellInner({ cell }: { cell: PuzzleCell }) {
   if (cell.kind === 'symbol') return <SymbolCellView char={cell.char} />;
-  return <LetterCellView code={cell.code} />;
+  return <LetterCellView cell={cell} />;
 }
 
 export const Cell = memo(CellInner);
 
 const styles = StyleSheet.create({
-  letterCell: {
-    alignItems: 'center',
-    marginHorizontal: 1,
-  },
+  letterCell: { alignItems: 'center', marginHorizontal: 1 },
   box: {
     width: CELL_WIDTH,
     height: CELL_HEIGHT,
@@ -94,23 +108,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  letter: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  code: {
-    fontSize: 10,
-    marginTop: 2,
-    fontVariant: ['tabular-nums'],
-  },
-  symbolCell: {
-    height: CELL_HEIGHT,
-    justifyContent: 'center',
-    paddingHorizontal: 1,
-  },
-  symbol: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginTop: Spacing.two, // align punctuation roughly with letter baseline
-  },
+  letter: { fontSize: 18, fontWeight: '700' },
+  code: { fontSize: 10, marginTop: 2, fontVariant: ['tabular-nums'] },
+  symbolCell: { height: CELL_HEIGHT, justifyContent: 'center', paddingHorizontal: 1 },
+  symbol: { fontSize: 20, fontWeight: '600', marginTop: Spacing.two },
 });

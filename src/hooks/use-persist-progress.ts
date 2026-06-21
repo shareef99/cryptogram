@@ -18,7 +18,7 @@ type Options = {
 };
 
 export function usePersistProgress(quoteId: number | null, options: Options = {}) {
-  const guesses = useGameStore((s) => s.guesses);
+  const guesses = useGameStore((s) => s.cellGuesses);
   const status = useGameStore((s) => s.status);
   const startedAt = useGameStore((s) => s.startedAt);
   const solvedHandled = useRef(false);
@@ -47,7 +47,7 @@ export function usePersistProgress(quoteId: number | null, options: Options = {}
   useEffect(() => {
     if (quoteId == null || status !== 'won' || !startedAt || solvedHandled.current) return;
     solvedHandled.current = true;
-    const finalGuesses = useGameStore.getState().guesses;
+    const finalGuesses = useGameStore.getState().cellGuesses;
     const timeSeconds = Math.max(0, Math.round((Date.now() - startedAt) / 1000));
     getDatabase()
       .then((db) =>
