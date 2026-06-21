@@ -27,11 +27,13 @@ function GameHeaderInner() {
       <Pressable onPress={() => router.back()} hitSlop={8} style={styles.back}>
         <ThemedText style={styles.backIcon}>‹</ThemedText>
       </Pressable>
-      <View style={styles.center}>
+      <Pressable
+        onLongPress={__DEV__ ? () => useGameStore.getState().__devSolve() : undefined}
+        style={styles.center}>
         <ThemedText themeColor="textSecondary" type="small">
           {total > 0 ? `${solved} / ${total} letters` : ' '}
         </ThemedText>
-      </View>
+      </Pressable>
       <View style={styles.right}>
         <View style={[styles.progressTrack, { backgroundColor: theme.backgroundElement }]}>
           <View

@@ -49,6 +49,8 @@ type GameState = {
   revealRandom: () => number | null;
   enterPickMode: () => void;
   exitPickMode: () => void;
+  /** Dev-only: instantly solve the current puzzle (for testing win flows). */
+  __devSolve: () => void;
   reset: () => void;
 };
 
@@ -165,6 +167,17 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (get().status === 'playing') set({ hintMode: 'pick' });
   },
   exitPickMode: () => set({ hintMode: 'idle' }),
+
+  __devSolve: () => {
+    const { puzzle } = get();
+    if (!puzzle) return;
+    set({
+      guesses: { ...puzzle.codeToSolution },
+      status: 'won',
+      selectedCode: null,
+      hintMode: 'idle',
+    });
+  },
 
   reset: () =>
     set({
