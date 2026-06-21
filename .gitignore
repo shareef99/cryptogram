@@ -43,3 +43,6 @@ app-example
 /android
 
 tmp
+
+# local project guide
+CLAUDE.md
