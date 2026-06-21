@@ -6,7 +6,7 @@
  */
 
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,12 +31,14 @@ import {
   type Difficulty,
   type Milestone,
 } from '@/db';
+import { maybeShowInterstitial, showRewarded } from '@/ads';
 import { usePersistProgress } from '@/hooks/use-persist-progress';
 import { useTheme } from '@/hooks/use-theme';
 import { haptics } from '@/lib/haptics';
 import { localDateString } from '@/lib/streak';
 import { useGameStore } from '@/store/game-store';
 import { usePlayerStore } from '@/store/player-store';
+import { useSettingsStore } from '@/store/settings-store';
 
 export default function PlayScreen() {
   const { id, difficulty } = useLocalSearchParams<{ id: string; difficulty?: string }>();
@@ -47,6 +49,8 @@ export default function PlayScreen() {
   const [quoteId, setQuoteId] = useState<number | null>(null);
   const [puzzleDifficulty, setPuzzleDifficulty] = useState<Difficulty>(1);
   const [coinsEarned, setCoinsEarned] = useState(0);
+  const [doubled, setDoubled] = useState(false);
+  const [doubling, setDoubling] = useState(false);
   const [milestone, setMilestone] = useState<Milestone | null>(null);
 
   const puzzle = useGameStore((s) => s.puzzle);
@@ -55,6 +59,28 @@ export default function PlayScreen() {
   const load = useGameStore((s) => s.load);
   const reset = useGameStore((s) => s.reset);
   const awardCoins = usePlayerStore((s) => s.awardCoins);
+  const adsRemoved = useSettingsStore((s) => s.adsRemoved);
+
+  // Opt-in rewarded ad: doubles the level's coins only if watched to completion.
+  const handleDoubleIt = useCallback(async () => {
+    if (doubled || doubling) return;
+    setDoubling(true);
+    const earned = await showRewarded();
+    if (earned) {
+      await awardCoins(coinsEarned);
+      setCoinsEarned((c) => c * 2);
+      setDoubled(true);
+    }
+    setDoubling(false);
+  }, [doubled, doubling, coinsEarned, awardCoins]);
+
+  // Move to the next puzzle, possibly showing a frequency-capped interstitial.
+  // Uses a ref so it doesn't depend on loadPuzzle (defined below).
+  const loadPuzzleRef = useRef<(which: string) => void>(() => {});
+  const handleNext = useCallback(async () => {
+    await maybeShowInterstitial(adsRemoved, Date.now());
+    loadPuzzleRef.current('new');
+  }, [adsRemoved]);
 
   usePersistProgress(quoteId, {
     onSolved: async () => {
@@ -94,6 +120,7 @@ export default function PlayScreen() {
         setQuoteId(row.id);
         setPuzzleDifficulty(row.difficulty as Difficulty);
         setCoinsEarned(0);
+        setDoubled(false);
         setMilestone(null);
         load(toQuoteInput(row), parseGuesses(progress?.guesses ?? null));
       } catch (e) {
@@ -104,6 +131,7 @@ export default function PlayScreen() {
     },
     [load, difficulty],
   );
+  loadPuzzleRef.current = loadPuzzle;
 
   useEffect(() => {
     loadPuzzle(id);
@@ -154,7 +182,19 @@ export default function PlayScreen() {
               </ThemedText>
               <ThemedText style={[styles.coinDot, { color: theme.coin }]}>●</ThemedText>
             </View>
-            <Pressable onPress={() => loadPuzzle('new')} style={[styles.button, styles.winButton]}>
+
+            {!doubled && (
+              <Pressable
+                onPress={handleDoubleIt}
+                disabled={doubling}
+                style={[styles.button, styles.doubleButton, { backgroundColor: theme.coin, opacity: doubling ? 0.6 : 1 }]}>
+                <ThemedText style={styles.buttonText}>
+                  {doubling ? 'Loading ad…' : '✨ Double it (watch ad)'}
+                </ThemedText>
+              </Pressable>
+            )}
+
+            <Pressable onPress={handleNext} style={[styles.button, styles.winButton]}>
               <ThemedText style={styles.buttonText}>Next puzzle</ThemedText>
             </Pressable>
           </Animated.View>
@@ -204,5 +244,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   winButton: { backgroundColor: '#ffffff', marginTop: Spacing.two },
+  doubleButton: { marginTop: Spacing.two, alignSelf: 'stretch' },
   buttonText: { fontSize: 17, fontWeight: '700' },
 });

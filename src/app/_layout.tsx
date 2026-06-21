@@ -5,16 +5,20 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { initAds } from '@/ads';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { usePlayerStore } from '@/store/player-store';
+import { useSettingsStore } from '@/store/settings-store';
 
 export default function RootLayout() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
 
-  // Load the player profile (coins, hints, streak) into memory once at startup.
+  // Load player + settings into memory and initialize the ads SDK at startup.
   useEffect(() => {
     usePlayerStore.getState().hydrate().catch(() => {});
+    useSettingsStore.getState().hydrate().catch(() => {});
+    initAds();
   }, []);
 
   return (
