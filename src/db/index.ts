@@ -10,3 +10,4 @@ export * from './quotes';
 export * from './progress';
 export * from './player';
 export * from './activity';
+export * from './settings';
