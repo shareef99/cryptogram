@@ -10,6 +10,7 @@ import { useCallback } from 'react';
 
 import { HINT1_COST } from '@/constants/economy';
 import { getDatabase, incrementHints } from '@/db';
+import { haptics } from '@/lib/haptics';
 import { useGameStore } from '@/store/game-store';
 import { usePlayerStore } from '@/store/player-store';
 
@@ -56,6 +57,7 @@ export function useHints(quoteId: number | null) {
   /** Hint 2: consume a Lucky Reveal and reveal a random cell. */
   const luckyReveal = useCallback(async () => {
     if (await tryConsumeHint2()) {
+      haptics.light();
       bumpHints();
       revealRandom();
     }

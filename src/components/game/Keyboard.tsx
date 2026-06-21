@@ -9,6 +9,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { haptics } from '@/lib/haptics';
 import { useGameStore } from '@/store/game-store';
 
 const ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
@@ -18,7 +19,10 @@ function Key({ letter, used }: { letter: string; used: boolean }) {
   const inputLetter = useGameStore((s) => s.inputLetter);
   return (
     <Pressable
-      onPress={() => inputLetter(letter)}
+      onPress={() => {
+        haptics.tap();
+        inputLetter(letter);
+      }}
       style={({ pressed }) => [
         styles.key,
         { backgroundColor: theme.keyBackground, opacity: pressed ? 0.6 : used ? 0.45 : 1 },
@@ -46,7 +50,10 @@ function KeyboardInner() {
           ))}
           {i === 2 && (
             <Pressable
-              onPress={deleteSelected}
+              onPress={() => {
+                haptics.tap();
+                deleteSelected();
+              }}
               style={({ pressed }) => [
                 styles.key,
                 styles.delete,

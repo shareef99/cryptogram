@@ -4,8 +4,14 @@
  * affected cells, not the whole grid. Symbol cells are static.
  */
 
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { Spacing } from '@/constants/theme';
 import { isCodeCorrect, type Cell as PuzzleCell } from '@/game';
@@ -25,6 +31,18 @@ function LetterCellView({ code }: { code: number }) {
   );
   const pressCell = useGameStore((s) => s.pressCell);
 
+  // Quick scale-pop when a letter is placed (runs entirely on the UI thread).
+  const scale = useSharedValue(1);
+  useEffect(() => {
+    if (letter) {
+      scale.value = withSequence(
+        withTiming(1.18, { duration: 90 }),
+        withTiming(1, { duration: 130 }),
+      );
+    }
+  }, [letter, scale]);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
   const backgroundColor = highlighted
     ? theme.cellHighlight
     : selected
@@ -38,9 +56,9 @@ function LetterCellView({ code }: { code: number }) {
 
   return (
     <Pressable onPress={() => pressCell(code)} style={styles.letterCell} hitSlop={4}>
-      <View style={[styles.box, { backgroundColor, borderColor }]}>
+      <Animated.View style={[styles.box, { backgroundColor, borderColor }, animatedStyle]}>
         <Text style={[styles.letter, { color: theme.cellText }]}>{letter}</Text>
-      </View>
+      </Animated.View>
       <Text style={[styles.code, { color: theme.cellCode }]}>{code}</Text>
     </Pressable>
   );

@@ -8,6 +8,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GameHeader } from '@/components/game/GameHeader';
@@ -32,6 +33,7 @@ import {
 } from '@/db';
 import { usePersistProgress } from '@/hooks/use-persist-progress';
 import { useTheme } from '@/hooks/use-theme';
+import { haptics } from '@/lib/haptics';
 import { localDateString } from '@/lib/streak';
 import { useGameStore } from '@/store/game-store';
 import { usePlayerStore } from '@/store/player-store';
@@ -56,6 +58,7 @@ export default function PlayScreen() {
 
   usePersistProgress(quoteId, {
     onSolved: async () => {
+      haptics.success();
       const reward = COIN_REWARD[puzzleDifficulty];
       setCoinsEarned(reward);
       await awardCoins(reward);
@@ -134,7 +137,9 @@ export default function PlayScreen() {
         )}
 
         {status === 'won' && (
-          <View style={[styles.winBanner, { backgroundColor: theme.success }]}>
+          <Animated.View
+            entering={ZoomIn.springify().damping(14)}
+            style={[styles.winBanner, { backgroundColor: theme.success }]}>
             <ThemedText themeColor="primaryText" style={styles.winTitle}>
               Solved! 🎉
             </ThemedText>
@@ -152,7 +157,7 @@ export default function PlayScreen() {
             <Pressable onPress={() => loadPuzzle('new')} style={[styles.button, styles.winButton]}>
               <ThemedText style={styles.buttonText}>Next puzzle</ThemedText>
             </Pressable>
-          </View>
+          </Animated.View>
         )}
 
         {!loading && !error && status === 'playing' && (
