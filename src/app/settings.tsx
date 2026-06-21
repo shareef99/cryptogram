@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SettingRow } from '@/components/settings/SettingRow';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -21,15 +22,6 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
 ];
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.row}>
-      <ThemedText style={styles.rowLabel}>{label}</ThemedText>
-      {children}
-    </View>
-  );
-}
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -78,7 +70,7 @@ export default function SettingsScreen() {
 
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView type="backgroundElement" style={styles.card}>
-            <Row label="Theme">
+            <SettingRow label="Theme">
               <View style={styles.segment}>
                 {THEME_OPTIONS.map((o) => {
                   const active = themeMode === o.value;
@@ -97,13 +89,13 @@ export default function SettingsScreen() {
                   );
                 })}
               </View>
-            </Row>
+            </SettingRow>
 
             <View style={[styles.divider, { backgroundColor: theme.cellBorder }]} />
 
-            <Row label="Sound">
+            <SettingRow label="Sound">
               <Switch value={soundEnabled} onValueChange={setSoundEnabled} />
-            </Row>
+            </SettingRow>
           </ThemedView>
 
           <ThemedView type="backgroundElement" style={styles.card}>
@@ -147,13 +139,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 26 },
   content: { padding: Spacing.three, gap: Spacing.three },
   card: { borderRadius: Spacing.four, paddingHorizontal: Spacing.four },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.three,
-    minHeight: 56,
-  },
   rowButton: {
     flexDirection: 'row',
     alignItems: 'center',

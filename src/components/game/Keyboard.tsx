@@ -1,60 +1,17 @@
 /**
- * On-screen QWERTY keyboard wired to the game store. Tapping a key validates the
- * letter against the selected cell. The bottom row is flanked by left/right
- * arrows that move the selection between cells (wrapping at the ends).
+ * On-screen QWERTY keyboard. The bottom row is flanked by left/right arrows that
+ * move the cell selection (wrapping at the ends).
  */
 
-import { Ionicons } from '@expo/vector-icons';
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { haptics } from '@/lib/haptics';
-import { useGameStore } from '@/store/game-store';
+
+import { ArrowKey } from './ArrowKey';
+import { Key } from './Key';
 
 const ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
-
-function Key({ letter }: { letter: string }) {
-  const theme = useTheme();
-  const inputLetter = useGameStore((s) => s.inputLetter);
-  return (
-    <Pressable
-      onPress={() => {
-        haptics.tap();
-        inputLetter(letter);
-      }}
-      style={({ pressed }) => [
-        styles.key,
-        { backgroundColor: theme.keyBackground, opacity: pressed ? 0.6 : 1 },
-      ]}>
-      <Text style={[styles.keyText, { color: theme.keyText }]}>{letter}</Text>
-    </Pressable>
-  );
-}
-
-function ArrowKey({ dir }: { dir: -1 | 1 }) {
-  const theme = useTheme();
-  const moveSelection = useGameStore((s) => s.moveSelection);
-  return (
-    <Pressable
-      onPress={() => {
-        haptics.tap();
-        moveSelection(dir);
-      }}
-      style={({ pressed }) => [
-        styles.key,
-        styles.arrow,
-        { backgroundColor: theme.keyBackground, opacity: pressed ? 0.6 : 1 },
-      ]}>
-      <Ionicons
-        name={dir === -1 ? 'chevron-back' : 'chevron-forward'}
-        size={22}
-        color={theme.keyText}
-      />
-    </Pressable>
-  );
-}
 
 function KeyboardInner() {
   return (
@@ -84,21 +41,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 4,
-  },
-  key: {
-    flex: 1,
-    height: 46,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    maxWidth: 40,
-  },
-  arrow: {
-    flex: 1.4,
-    maxWidth: 52,
-  },
-  keyText: {
-    fontSize: 18,
-    fontWeight: '600',
   },
 });
