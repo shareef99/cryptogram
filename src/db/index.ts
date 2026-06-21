@@ -11,3 +11,4 @@ export * from './progress';
 export * from './player';
 export * from './activity';
 export * from './settings';
+export * from './reset';

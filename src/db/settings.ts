@@ -42,4 +42,5 @@ export async function setBoolSetting(
 export const SETTING_KEYS = {
   adsRemoved: 'ads_removed',
   sound: 'sound_enabled',
+  themeMode: 'theme_mode',
 } as const;

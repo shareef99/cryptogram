@@ -89,6 +89,13 @@ export default function HomeScreen() {
             <ThemedText style={[styles.coinIcon, { color: theme.coin }]}>●</ThemedText>
             <ThemedText style={styles.coinText}>{coins}</ThemedText>
           </Pressable>
+
+          <Pressable
+            onPress={() => router.push('/settings')}
+            hitSlop={8}
+            style={[styles.settingsButton, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText style={styles.settingsIcon}>⚙</ThemedText>
+          </Pressable>
         </View>
 
         <View style={styles.hero}>
@@ -170,7 +177,8 @@ const styles = StyleSheet.create({
   },
   topBar: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: Spacing.two,
   },
   coinPill: {
@@ -181,6 +189,14 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one + 2,
     borderRadius: 999,
   },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsIcon: { fontSize: 20 },
   coinIcon: { fontSize: 16 },
   coinText: { fontSize: 16, fontWeight: '700' },
   hero: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.two },
