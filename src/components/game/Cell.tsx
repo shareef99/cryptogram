@@ -8,7 +8,7 @@ import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
-import type { Cell as PuzzleCell } from '@/game';
+import { isCodeCorrect, type Cell as PuzzleCell } from '@/game';
 import { useTheme } from '@/hooks/use-theme';
 import { useGameStore } from '@/store/game-store';
 
@@ -19,18 +19,26 @@ function LetterCellView({ code }: { code: number }) {
   const theme = useTheme();
   const letter = useGameStore((s) => s.guesses[code] ?? '');
   const selected = useGameStore((s) => s.selectedCode === code);
-  const selectCode = useGameStore((s) => s.selectCode);
+  // Highlighted while Hint-1 pick mode is active and this cell isn't yet solved.
+  const highlighted = useGameStore((s) =>
+    s.hintMode === 'pick' && s.puzzle ? !isCodeCorrect(s.puzzle, s.guesses, code) : false,
+  );
+  const pressCell = useGameStore((s) => s.pressCell);
+
+  const backgroundColor = highlighted
+    ? theme.cellHighlight
+    : selected
+      ? theme.cellSelected
+      : theme.cellBackground;
+  const borderColor = highlighted
+    ? theme.coin
+    : selected
+      ? theme.cellSelectedBorder
+      : theme.cellBorder;
 
   return (
-    <Pressable onPress={() => selectCode(code)} style={styles.letterCell} hitSlop={4}>
-      <View
-        style={[
-          styles.box,
-          {
-            backgroundColor: selected ? theme.cellSelected : theme.cellBackground,
-            borderColor: selected ? theme.cellSelectedBorder : theme.cellBorder,
-          },
-        ]}>
+    <Pressable onPress={() => pressCell(code)} style={styles.letterCell} hitSlop={4}>
+      <View style={[styles.box, { backgroundColor, borderColor }]}>
         <Text style={[styles.letter, { color: theme.cellText }]}>{letter}</Text>
       </View>
       <Text style={[styles.code, { color: theme.cellCode }]}>{code}</Text>

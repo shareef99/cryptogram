@@ -10,8 +10,11 @@ import { create } from 'zustand';
 
 import {
   buildPuzzle,
+  isCodeCorrect,
   isSolved,
   letterCells,
+  pickRandomUnsolvedCode,
+  Rng,
   type Guesses,
   type Puzzle,
   type QuoteInput,
@@ -19,23 +22,33 @@ import {
 
 export type GameStatus = 'idle' | 'playing' | 'won';
 
+/** 'pick' = Hint 1 active: the player taps an unsolved cell to reveal it. */
+export type HintMode = 'idle' | 'pick';
+
 type GameState = {
   puzzle: Puzzle | null;
   guesses: Guesses;
   selectedCode: number | null;
   status: GameStatus;
   startedAt: number | null;
+  hintMode: HintMode;
 
   /** Load a quote into play, optionally resuming previous guesses. */
   load: (quote: QuoteInput, initialGuesses?: Guesses) => void;
   /** Select a cipher code (tapping a letter cell); null clears selection. */
   selectCode: (code: number | null) => void;
+  /** A cell was pressed: reveal it if in Hint-1 pick mode, else select it. */
+  pressCell: (code: number) => void;
   /** Assign a letter to the selected code, then auto-advance. */
   inputLetter: (letter: string) => void;
   /** Clear the selected code's letter. */
   deleteSelected: () => void;
   /** Force a code to its correct letter (hint reveal). */
   reveal: (code: number) => void;
+  /** Reveal a random still-unsolved code; returns it (or null if none). */
+  revealRandom: () => number | null;
+  enterPickMode: () => void;
+  exitPickMode: () => void;
   reset: () => void;
 };
 
@@ -62,6 +75,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   selectedCode: null,
   status: 'idle',
   startedAt: null,
+  hintMode: 'idle',
 
   load: (quote, initialGuesses) => {
     const puzzle = buildPuzzle(quote);
@@ -73,11 +87,26 @@ export const useGameStore = create<GameState>((set, get) => ({
       selectedCode: solved ? null : nextUnsolvedCode(puzzle, guesses, -1),
       status: solved ? 'won' : 'playing',
       startedAt: Date.now(),
+      hintMode: 'idle',
     });
   },
 
   selectCode: (code) => {
     if (get().status !== 'playing') return;
+    set({ selectedCode: code });
+  },
+
+  pressCell: (code) => {
+    const { puzzle, guesses, status, hintMode } = get();
+    if (status !== 'playing' || !puzzle) return;
+    if (hintMode === 'pick') {
+      // Reveal the tapped cell only if it isn't already correct.
+      if (!isCodeCorrect(puzzle, guesses, code)) {
+        get().reveal(code);
+      }
+      set({ hintMode: 'idle' });
+      return;
+    }
     set({ selectedCode: code });
   },
 
@@ -121,5 +150,29 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
-  reset: () => set({ puzzle: null, guesses: {}, selectedCode: null, status: 'idle', startedAt: null }),
+  revealRandom: () => {
+    const { puzzle, guesses } = get();
+    if (!puzzle) return null;
+    // Hint randomness need not be reproducible; vary the seed by progress.
+    const rng = new Rng(`${puzzle.id}-${Object.keys(guesses).length}-${Date.now()}`);
+    const code = pickRandomUnsolvedCode(puzzle, guesses, rng);
+    if (code == null) return null;
+    get().reveal(code);
+    return code;
+  },
+
+  enterPickMode: () => {
+    if (get().status === 'playing') set({ hintMode: 'pick' });
+  },
+  exitPickMode: () => set({ hintMode: 'idle' }),
+
+  reset: () =>
+    set({
+      puzzle: null,
+      guesses: {},
+      selectedCode: null,
+      status: 'idle',
+      startedAt: null,
+      hintMode: 'idle',
+    }),
 }));
