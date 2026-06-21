@@ -14,6 +14,7 @@ import { GameHeader } from '@/components/game/GameHeader';
 import { HintControls } from '@/components/game/HintControls';
 import { Keyboard } from '@/components/game/Keyboard';
 import { PuzzleGrid } from '@/components/game/PuzzleGrid';
+import { RewardModal } from '@/components/meta/RewardModal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { COIN_REWARD } from '@/constants/economy';
@@ -24,11 +25,14 @@ import {
   getQuoteById,
   getRandomUnsolvedQuote,
   parseGuesses,
+  recordLevelCleared,
   toQuoteInput,
   type Difficulty,
+  type Milestone,
 } from '@/db';
 import { usePersistProgress } from '@/hooks/use-persist-progress';
 import { useTheme } from '@/hooks/use-theme';
+import { localDateString } from '@/lib/streak';
 import { useGameStore } from '@/store/game-store';
 import { usePlayerStore } from '@/store/player-store';
 
@@ -41,6 +45,7 @@ export default function PlayScreen() {
   const [quoteId, setQuoteId] = useState<number | null>(null);
   const [puzzleDifficulty, setPuzzleDifficulty] = useState<Difficulty>(1);
   const [coinsEarned, setCoinsEarned] = useState(0);
+  const [milestone, setMilestone] = useState<Milestone | null>(null);
 
   const puzzle = useGameStore((s) => s.puzzle);
   const status = useGameStore((s) => s.status);
@@ -50,10 +55,18 @@ export default function PlayScreen() {
   const awardCoins = usePlayerStore((s) => s.awardCoins);
 
   usePersistProgress(quoteId, {
-    onSolved: () => {
+    onSolved: async () => {
       const reward = COIN_REWARD[puzzleDifficulty];
       setCoinsEarned(reward);
-      awardCoins(reward);
+      await awardCoins(reward);
+      try {
+        const db = await getDatabase();
+        const result = await recordLevelCleared(db, localDateString(new Date()), reward);
+        await usePlayerStore.getState().hydrate(); // sync streak + milestone grants
+        if (result.milestone) setMilestone(result.milestone);
+      } catch {
+        /* streak update is best-effort */
+      }
     },
   });
 
@@ -78,6 +91,7 @@ export default function PlayScreen() {
         setQuoteId(row.id);
         setPuzzleDifficulty(row.difficulty as Difficulty);
         setCoinsEarned(0);
+        setMilestone(null);
         load(toQuoteInput(row), parseGuesses(progress?.guesses ?? null));
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load puzzle');
@@ -147,6 +161,8 @@ export default function PlayScreen() {
             {hintMode !== 'pick' && <Keyboard />}
           </View>
         )}
+
+        <RewardModal milestone={milestone} onClose={() => setMilestone(null)} />
       </SafeAreaView>
     </ThemedView>
   );

@@ -9,6 +9,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { StreakPanel } from '@/components/meta/StreakPanel';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -100,6 +101,8 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.bottom}>
+          <StreakPanel />
+
           <View style={styles.progressRow}>
             <ThemedText themeColor="textSecondary" type="small">
               {solved} of {total} solved
