@@ -5,8 +5,9 @@
 import { create } from 'zustand';
 
 import { getBoolSetting, getDatabase, getSetting, setBoolSetting, setSetting, SETTING_KEYS } from '@/db';
+import type { ThemeMode } from '@/types';
 
-export type ThemeMode = 'system' | 'light' | 'dark';
+export type { ThemeMode } from '@/types';
 
 type SettingsState = {
   adsRemoved: boolean;

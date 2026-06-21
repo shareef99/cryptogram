@@ -6,14 +6,7 @@
 
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-export type PlayerRow = {
-  id: number;
-  coins: number;
-  hint2_count: number;
-  current_streak: number;
-  longest_streak: number;
-  last_active_date: string | null;
-};
+import type { PlayerRow } from '@/types';
 
 export async function getPlayer(db: SQLiteDatabase): Promise<PlayerRow> {
   const row = await db.getFirstAsync<PlayerRow>('SELECT * FROM player WHERE id = 1');

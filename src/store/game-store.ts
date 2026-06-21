@@ -10,24 +10,12 @@
 
 import { create } from 'zustand';
 
-import {
-  buildPuzzle,
-  letterCells,
-  Rng,
-  type LetterCell,
-  type Puzzle,
-  type QuoteInput,
-} from '@/game';
+import { buildPuzzle, letterCells, Rng } from '@/game';
+import type { CellGuesses, GameStatus, HintMode, LetterCell, Puzzle, QuoteInput } from '@/types';
 
-export type GameStatus = 'idle' | 'playing' | 'won' | 'lost';
-
-/** 'pick' = Hint 1 active: the player taps an unsolved cell to reveal it. */
-export type HintMode = 'idle' | 'pick';
+export type { CellGuesses, GameStatus, HintMode } from '@/types';
 
 export const MAX_MISTAKES = 3;
-
-/** cellId -> the correct letter locked into that cell. */
-export type CellGuesses = Record<number, string>;
 
 type GameState = {
   puzzle: Puzzle | null;

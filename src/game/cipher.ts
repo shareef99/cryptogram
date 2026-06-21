@@ -11,17 +11,12 @@
  * means we never need to store cipher data; it is regenerated on demand.
  */
 
+import type { Cipher } from '../types/game';
+
 import { Rng } from './rng';
 
 export const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 export const ALPHABET_SIZE = ALPHABET.length;
-
-export type Cipher = {
-  /** letter (A–Z) -> code number (1–26) */
-  letterToCode: Record<string, number>;
-  /** code number (1–26) -> letter (A–Z) */
-  codeToLetter: Record<number, string>;
-};
 
 /**
  * Generate a deterministic cipher from a seed.

@@ -8,18 +8,9 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { STREAK_MILESTONES } from '@/constants/economy';
 import { computeStreak } from '@/lib/streak';
+import type { LevelClearedResult, Milestone } from '@/types';
 
 import { addCoins, addHint2 } from './player';
-
-export type Milestone = { day: number; coins: number; hint2: number };
-
-export type LevelClearedResult = {
-  isNewActiveDay: boolean;
-  currentStreak: number;
-  longestStreak: number;
-  /** Set when this clear crossed a streak milestone (reward already granted). */
-  milestone: Milestone | null;
-};
 
 export async function recordLevelCleared(
   db: SQLiteDatabase,

@@ -28,9 +28,8 @@ import {
   parseGuesses,
   recordLevelCleared,
   toQuoteInput,
-  type Difficulty,
-  type Milestone,
 } from '@/db';
+import type { Difficulty, Milestone } from '@/types';
 import { maybeShowInterstitial, showRewarded } from '@/ads';
 import { usePersistProgress } from '@/hooks/use-persist-progress';
 import { useTheme } from '@/hooks/use-theme';

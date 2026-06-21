@@ -11,48 +11,9 @@
  * that combine a puzzle with a set of guesses.
  */
 
-import { generateCipher, isLetter, type Cipher } from './cipher';
+import type { Cipher, Cell, LetterCell, Puzzle, QuoteInput, Word } from '../types/game';
 
-export type QuoteInput = {
-  id: number;
-  text: string;
-  author?: string;
-};
-
-export type LetterCell = {
-  kind: 'letter';
-  /** Stable position index across the whole puzzle (0-based). */
-  id: number;
-  /** Correct uppercase letter A–Z. */
-  solution: string;
-  /** Cipher code shown to the player (1–26). */
-  code: number;
-};
-
-export type SymbolCell = {
-  kind: 'symbol';
-  id: number;
-  /** Literal character to render (punctuation, digit, etc.). */
-  char: string;
-};
-
-export type Cell = LetterCell | SymbolCell;
-export type Word = Cell[];
-
-export type Puzzle = {
-  id: number;
-  /** Normalized, uppercased display text. */
-  text: string;
-  author?: string;
-  /** Words (split on spaces); each word is a sequence of cells. */
-  words: Word[];
-  /** code (1–26) -> correct letter, for every code used in this puzzle. */
-  codeToSolution: Record<number, string>;
-  /** Distinct codes used in this puzzle, ascending. */
-  codes: number[];
-  /** Total number of letter cells (used for progress/scoring). */
-  letterCount: number;
-};
+import { generateCipher, isLetter } from './cipher';
 
 /**
  * Light normalization so real-world quotes render cleanly:

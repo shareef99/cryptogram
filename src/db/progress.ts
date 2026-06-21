@@ -5,17 +5,7 @@
 
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import type { Guesses } from '@/game';
-
-export type ProgressRow = {
-  quote_id: number;
-  status: 'in_progress' | 'solved';
-  guesses: string | null;
-  hints_used: number;
-  time_seconds: number;
-  started_at: number | null;
-  solved_at: number | null;
-};
+import type { Guesses, ProgressRow } from '@/types';
 
 export async function getProgress(
   db: SQLiteDatabase,

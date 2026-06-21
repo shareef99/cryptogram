@@ -13,15 +13,10 @@ import { StreakPanel } from '@/components/meta/StreakPanel';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import {
-  getDatabase,
-  getInProgressQuote,
-  getQuoteCounts,
-  type Difficulty,
-  type QuoteCounts,
-} from '@/db';
+import { getDatabase, getInProgressQuote, getQuoteCounts } from '@/db';
 import { useTheme } from '@/hooks/use-theme';
 import { usePlayerStore } from '@/store/player-store';
+import type { Difficulty, QuoteCounts } from '@/types';
 
 const DIFFICULTIES: { value: Difficulty; label: string }[] = [
   { value: 1, label: 'Easy' },

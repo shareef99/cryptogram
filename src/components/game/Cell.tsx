@@ -14,8 +14,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Spacing } from '@/constants/theme';
-import type { Cell as PuzzleCell, LetterCell } from '@/game';
 import { useTheme } from '@/hooks/use-theme';
+import type { Cell as PuzzleCell, LetterCell } from '@/types';
 import { useGameStore } from '@/store/game-store';
 
 export const CELL_WIDTH = 28;

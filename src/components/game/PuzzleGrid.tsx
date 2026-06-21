@@ -8,7 +8,7 @@ import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
-import type { Puzzle } from '@/game';
+import type { Puzzle } from '@/types';
 
 import { Cell } from './Cell';
 

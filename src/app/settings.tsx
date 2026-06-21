@@ -13,7 +13,8 @@ import { getDatabase, resetProgress } from '@/db';
 import { useTheme } from '@/hooks/use-theme';
 import { IAP_AVAILABLE, purchaseRemoveAds } from '@/iap';
 import { usePlayerStore } from '@/store/player-store';
-import { useSettingsStore, type ThemeMode } from '@/store/settings-store';
+import { useSettingsStore } from '@/store/settings-store';
+import type { ThemeMode } from '@/types';
 
 const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: 'system', label: 'System' },

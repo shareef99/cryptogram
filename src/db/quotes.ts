@@ -8,20 +8,7 @@
 
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import type { QuoteInput } from '@/game';
-
-/** A row from the `quotes` table (snake_case as stored). */
-export type QuoteRow = {
-  id: number;
-  text: string;
-  author: string | null;
-  category: string | null;
-  difficulty: number;
-  letter_count: number;
-  length: number;
-};
-
-export type Difficulty = 1 | 2 | 3;
+import type { Difficulty, QuoteCounts, QuoteInput, QuoteRow } from '@/types';
 
 /** Convert a DB row into the shape `buildPuzzle` expects. */
 export function toQuoteInput(row: QuoteRow): QuoteInput {
@@ -64,12 +51,6 @@ export async function getInProgressQuote(db: SQLiteDatabase): Promise<QuoteRow |
       LIMIT 1`,
   );
 }
-
-export type QuoteCounts = {
-  total: number;
-  solved: number;
-  byDifficulty: Record<Difficulty, { total: number; solved: number }>;
-};
 
 /** Progress summary for the home screen. */
 export async function getQuoteCounts(db: SQLiteDatabase): Promise<QuoteCounts> {

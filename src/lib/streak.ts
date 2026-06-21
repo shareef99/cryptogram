@@ -5,6 +5,10 @@
  * never raw timestamps, so they're immune to timezone/DST drift.
  */
 
+import type { StreakUpdate } from '../types/streak';
+
+export type { StreakUpdate } from '../types/streak';
+
 /** Local calendar date as 'YYYY-MM-DD'. */
 export function localDateString(d: Date): string {
   const y = d.getFullYear();
@@ -18,13 +22,6 @@ export function addDays(dateStr: string, n: number): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   return localDateString(new Date(y, m - 1, d + n));
 }
-
-export type StreakUpdate = {
-  /** The streak length after accounting for today. */
-  streak: number;
-  /** True if today is the first active day recorded (i.e. streak advanced). */
-  isNewActiveDay: boolean;
-};
 
 /**
  * Given the last active date, current streak, and today's date, compute the new
