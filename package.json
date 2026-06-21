@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "check:game": "tsx scripts/check-game.ts",
     "check:db": "tsx scripts/check-db.ts",
+    "check:streak": "tsx scripts/check-streak.ts",
     "build:db": "tsx scripts/build-db.ts"
   },
   "dependencies": {
