@@ -16,21 +16,33 @@ import { PuzzleGrid } from '@/components/game/PuzzleGrid';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { getDatabase, getQuoteById, getRandomUnsolvedQuote, toQuoteInput } from '@/db';
+import {
+  getDatabase,
+  getProgress,
+  getQuoteById,
+  getRandomUnsolvedQuote,
+  parseGuesses,
+  toQuoteInput,
+  type Difficulty,
+} from '@/db';
+import { usePersistProgress } from '@/hooks/use-persist-progress';
 import { useTheme } from '@/hooks/use-theme';
 import { useGameStore } from '@/store/game-store';
 
 export default function PlayScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, difficulty } = useLocalSearchParams<{ id: string; difficulty?: string }>();
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [author, setAuthor] = useState<string | null>(null);
+  const [quoteId, setQuoteId] = useState<number | null>(null);
 
   const puzzle = useGameStore((s) => s.puzzle);
   const status = useGameStore((s) => s.status);
   const load = useGameStore((s) => s.load);
   const reset = useGameStore((s) => s.reset);
+
+  usePersistProgress(quoteId);
 
   const loadPuzzle = useCallback(
     async (which: string) => {
@@ -38,23 +50,27 @@ export default function PlayScreen() {
       setError(null);
       try {
         const db = await getDatabase();
+        const diff = difficulty ? (Number(difficulty) as Difficulty) : undefined;
         const row =
           which && which !== 'new'
             ? await getQuoteById(db, Number(which))
-            : await getRandomUnsolvedQuote(db);
+            : await getRandomUnsolvedQuote(db, diff);
         if (!row) {
           setError('No more puzzles — you solved them all!');
           return;
         }
+        // Resume any saved guesses for this quote.
+        const progress = await getProgress(db, row.id);
         setAuthor(row.author);
-        load(toQuoteInput(row));
+        setQuoteId(row.id);
+        load(toQuoteInput(row), parseGuesses(progress?.guesses ?? null));
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load puzzle');
       } finally {
         setLoading(false);
       }
     },
-    [load],
+    [load, difficulty],
   );
 
   useEffect(() => {
