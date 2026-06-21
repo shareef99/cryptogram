@@ -1,0 +1,143 @@
+/**
+ * Puzzle screen. Loads a quote from the DB (a specific id, or a fresh random
+ * unsolved one for "new"), builds the puzzle into the game store, and renders
+ * the header + scrollable grid + keyboard. Win state shows a simple banner for
+ * now (richer overlay + coins/animations arrive in later phases).
+ */
+
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { GameHeader } from '@/components/game/GameHeader';
+import { Keyboard } from '@/components/game/Keyboard';
+import { PuzzleGrid } from '@/components/game/PuzzleGrid';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { getDatabase, getQuoteById, getRandomUnsolvedQuote, toQuoteInput } from '@/db';
+import { useTheme } from '@/hooks/use-theme';
+import { useGameStore } from '@/store/game-store';
+
+export default function PlayScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const theme = useTheme();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [author, setAuthor] = useState<string | null>(null);
+
+  const puzzle = useGameStore((s) => s.puzzle);
+  const status = useGameStore((s) => s.status);
+  const load = useGameStore((s) => s.load);
+  const reset = useGameStore((s) => s.reset);
+
+  const loadPuzzle = useCallback(
+    async (which: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const db = await getDatabase();
+        const row =
+          which && which !== 'new'
+            ? await getQuoteById(db, Number(which))
+            : await getRandomUnsolvedQuote(db);
+        if (!row) {
+          setError('No more puzzles — you solved them all!');
+          return;
+        }
+        setAuthor(row.author);
+        load(toQuoteInput(row));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load puzzle');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [load],
+  );
+
+  useEffect(() => {
+    loadPuzzle(id);
+    return () => reset();
+  }, [id, loadPuzzle, reset]);
+
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        <GameHeader />
+
+        {loading ? (
+          <View style={styles.center}>
+            <ActivityIndicator color={theme.primary} />
+          </View>
+        ) : error ? (
+          <View style={styles.center}>
+            <ThemedText style={styles.errorText}>{error}</ThemedText>
+            <Pressable onPress={() => router.back()} style={[styles.button, { backgroundColor: theme.primary }]}>
+              <ThemedText themeColor="primaryText" style={styles.buttonText}>
+                Back
+              </ThemedText>
+            </Pressable>
+          </View>
+        ) : (
+          <ScrollView
+            contentContainerStyle={styles.gridScroll}
+            showsVerticalScrollIndicator={false}>
+            {puzzle && <PuzzleGrid puzzle={puzzle} />}
+          </ScrollView>
+        )}
+
+        {status === 'won' && (
+          <View style={[styles.winBanner, { backgroundColor: theme.success }]}>
+            <ThemedText themeColor="primaryText" style={styles.winTitle}>
+              Solved! 🎉
+            </ThemedText>
+            {author && (
+              <ThemedText themeColor="primaryText" style={styles.winAuthor}>
+                — {author}
+              </ThemedText>
+            )}
+            <Pressable
+              onPress={() => loadPuzzle('new')}
+              style={[styles.button, styles.winButton]}>
+              <ThemedText style={styles.buttonText}>Next puzzle</ThemedText>
+            </Pressable>
+          </View>
+        )}
+
+        {!loading && !error && status !== 'won' && <Keyboard />}
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, alignItems: 'center' },
+  safe: { flex: 1, width: '100%', maxWidth: MaxContentWidth },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.three, padding: Spacing.four },
+  errorText: { textAlign: 'center' },
+  gridScroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.four,
+  },
+  winBanner: {
+    margin: Spacing.three,
+    padding: Spacing.four,
+    borderRadius: Spacing.four,
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  winTitle: { fontSize: 24, fontWeight: '800' },
+  winAuthor: { fontSize: 16 },
+  button: {
+    paddingHorizontal: Spacing.five,
+    paddingVertical: Spacing.three,
+    borderRadius: Spacing.four,
+    alignItems: 'center',
+  },
+  winButton: { backgroundColor: '#ffffff', marginTop: Spacing.two },
+  buttonText: { fontSize: 17, fontWeight: '700' },
+});

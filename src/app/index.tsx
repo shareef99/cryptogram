@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -21,8 +22,8 @@ export default function HomeScreen() {
           </ThemedText>
         </View>
 
-        {/* Routing to the puzzle screen is wired up in a later phase. */}
         <Pressable
+          onPress={() => router.push({ pathname: '/play/[id]', params: { id: 'new' } })}
           style={({ pressed }) => [
             styles.playButton,
             { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1 },
