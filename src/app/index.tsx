@@ -15,12 +15,12 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import {
   getDatabase,
   getInProgressQuote,
-  getPlayer,
   getQuoteCounts,
   type Difficulty,
   type QuoteCounts,
 } from '@/db';
 import { useTheme } from '@/hooks/use-theme';
+import { usePlayerStore } from '@/store/player-store';
 
 const DIFFICULTIES: { value: Difficulty; label: string }[] = [
   { value: 1, label: 'Easy' },
@@ -38,8 +38,8 @@ function startPuzzle(difficulty?: Difficulty) {
 export default function HomeScreen() {
   const theme = useTheme();
   const [counts, setCounts] = useState<QuoteCounts | null>(null);
-  const [coins, setCoins] = useState(0);
   const [continueId, setContinueId] = useState<number | null>(null);
+  const coins = usePlayerStore((s) => s.coins);
 
   useFocusEffect(
     useCallback(() => {
@@ -47,15 +47,15 @@ export default function HomeScreen() {
       (async () => {
         try {
           const db = await getDatabase();
-          const [c, player, inProgress] = await Promise.all([
+          const [c, inProgress] = await Promise.all([
             getQuoteCounts(db),
-            getPlayer(db),
             getInProgressQuote(db),
           ]);
           if (!active) return;
           setCounts(c);
-          setCoins(player.coins);
           setContinueId(inProgress?.id ?? null);
+          // Keep coins/streak fresh in case they changed elsewhere.
+          usePlayerStore.getState().hydrate();
         } catch {
           /* DB not ready yet — leave defaults */
         }
@@ -74,10 +74,20 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safe}>
         <View style={styles.topBar}>
-          <View style={[styles.coinPill, { backgroundColor: theme.backgroundElement }]}>
+          <Pressable
+            // Dev-only: long-press to grant coins + Lucky Reveals for testing.
+            onLongPress={
+              __DEV__
+                ? () => {
+                    usePlayerStore.getState().awardCoins(100);
+                    usePlayerStore.getState().grantHint2(3);
+                  }
+                : undefined
+            }
+            style={[styles.coinPill, { backgroundColor: theme.backgroundElement }]}>
             <ThemedText style={[styles.coinIcon, { color: theme.coin }]}>●</ThemedText>
             <ThemedText style={styles.coinText}>{coins}</ThemedText>
-          </View>
+          </Pressable>
         </View>
 
         <View style={styles.hero}>

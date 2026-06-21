@@ -11,10 +11,12 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GameHeader } from '@/components/game/GameHeader';
+import { HintControls } from '@/components/game/HintControls';
 import { Keyboard } from '@/components/game/Keyboard';
 import { PuzzleGrid } from '@/components/game/PuzzleGrid';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { COIN_REWARD } from '@/constants/economy';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import {
   getDatabase,
@@ -28,6 +30,7 @@ import {
 import { usePersistProgress } from '@/hooks/use-persist-progress';
 import { useTheme } from '@/hooks/use-theme';
 import { useGameStore } from '@/store/game-store';
+import { usePlayerStore } from '@/store/player-store';
 
 export default function PlayScreen() {
   const { id, difficulty } = useLocalSearchParams<{ id: string; difficulty?: string }>();
@@ -36,13 +39,23 @@ export default function PlayScreen() {
   const [error, setError] = useState<string | null>(null);
   const [author, setAuthor] = useState<string | null>(null);
   const [quoteId, setQuoteId] = useState<number | null>(null);
+  const [puzzleDifficulty, setPuzzleDifficulty] = useState<Difficulty>(1);
+  const [coinsEarned, setCoinsEarned] = useState(0);
 
   const puzzle = useGameStore((s) => s.puzzle);
   const status = useGameStore((s) => s.status);
+  const hintMode = useGameStore((s) => s.hintMode);
   const load = useGameStore((s) => s.load);
   const reset = useGameStore((s) => s.reset);
+  const awardCoins = usePlayerStore((s) => s.awardCoins);
 
-  usePersistProgress(quoteId);
+  usePersistProgress(quoteId, {
+    onSolved: () => {
+      const reward = COIN_REWARD[puzzleDifficulty];
+      setCoinsEarned(reward);
+      awardCoins(reward);
+    },
+  });
 
   const loadPuzzle = useCallback(
     async (which: string) => {
@@ -63,6 +76,8 @@ export default function PlayScreen() {
         const progress = await getProgress(db, row.id);
         setAuthor(row.author);
         setQuoteId(row.id);
+        setPuzzleDifficulty(row.difficulty as Difficulty);
+        setCoinsEarned(0);
         load(toQuoteInput(row), parseGuesses(progress?.guesses ?? null));
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load puzzle');
@@ -114,15 +129,24 @@ export default function PlayScreen() {
                 — {author}
               </ThemedText>
             )}
-            <Pressable
-              onPress={() => loadPuzzle('new')}
-              style={[styles.button, styles.winButton]}>
+            <View style={styles.coinsEarned}>
+              <ThemedText themeColor="primaryText" style={styles.coinsEarnedText}>
+                + {coinsEarned}
+              </ThemedText>
+              <ThemedText style={[styles.coinDot, { color: theme.coin }]}>●</ThemedText>
+            </View>
+            <Pressable onPress={() => loadPuzzle('new')} style={[styles.button, styles.winButton]}>
               <ThemedText style={styles.buttonText}>Next puzzle</ThemedText>
             </Pressable>
           </View>
         )}
 
-        {!loading && !error && status !== 'won' && <Keyboard />}
+        {!loading && !error && status === 'playing' && (
+          <View style={styles.controls}>
+            <HintControls quoteId={quoteId} />
+            {hintMode !== 'pick' && <Keyboard />}
+          </View>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
@@ -148,6 +172,10 @@ const styles = StyleSheet.create({
   },
   winTitle: { fontSize: 24, fontWeight: '800' },
   winAuthor: { fontSize: 16 },
+  coinsEarned: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  coinsEarnedText: { fontSize: 20, fontWeight: '800' },
+  coinDot: { fontSize: 16 },
+  controls: { gap: Spacing.two, paddingBottom: Spacing.one },
   button: {
     paddingHorizontal: Spacing.five,
     paddingVertical: Spacing.three,
