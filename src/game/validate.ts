@@ -7,14 +7,9 @@
  * wrong?", and to support the two hint types.
  */
 
-import { Rng } from './rng';
-import type { LetterCell, Puzzle } from './puzzle';
+import type { Guesses, LetterCell, Puzzle } from '../types/game';
 
-/**
- * code (1–26) -> the letter the player has assigned to it.
- * A missing key or empty string means "no guess yet".
- */
-export type Guesses = Record<number, string>;
+import { Rng } from './rng';
 
 /** Normalize a guess slot to an uppercase letter or '' (empty). */
 function guessFor(guesses: Guesses, code: number): string {
