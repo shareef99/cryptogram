@@ -9,6 +9,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CoinIcon } from '@/components/CoinIcon';
 import { StreakPanel } from '@/components/meta/StreakPanel';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -81,7 +82,7 @@ export default function HomeScreen() {
                 : undefined
             }
             style={[styles.coinPill, { backgroundColor: theme.backgroundElement }]}>
-            <ThemedText style={[styles.coinIcon, { color: theme.coin }]}>●</ThemedText>
+            <CoinIcon size={15} />
             <ThemedText style={styles.coinText}>{coins}</ThemedText>
           </Pressable>
 

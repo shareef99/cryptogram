@@ -1,12 +1,12 @@
 /**
  * Puzzle screen. Loads a quote from the DB (a specific id, or a fresh random
  * unsolved one for "new"), builds the puzzle into the game store, and renders
- * the header + scrollable grid + keyboard. Win state shows a simple banner for
- * now (richer overlay + coins/animations arrive in later phases).
+ * the header + scrollable grid + keyboard. On solve it records rewards and
+ * routes to the result screen; running out of lives shows a lost banner.
  */
 
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +15,6 @@ import { GameHeader } from '@/components/game/GameHeader';
 import { HintControls } from '@/components/game/HintControls';
 import { Keyboard } from '@/components/game/Keyboard';
 import { PuzzleGrid } from '@/components/game/PuzzleGrid';
-import { RewardModal } from '@/components/meta/RewardModal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { COIN_REWARD } from '@/constants/economy';
@@ -29,15 +28,14 @@ import {
   recordLevelCleared,
   toQuoteInput,
 } from '@/db';
-import type { Difficulty, Milestone } from '@/types';
-import { maybeShowInterstitial, showRewarded } from '@/ads';
 import { usePersistProgress } from '@/hooks/use-persist-progress';
 import { useTheme } from '@/hooks/use-theme';
 import { haptics } from '@/lib/haptics';
 import { localDateString } from '@/lib/streak';
 import { useGameStore } from '@/store/game-store';
 import { usePlayerStore } from '@/store/player-store';
-import { useSettingsStore } from '@/store/settings-store';
+import { useResultStore } from '@/store/result-store';
+import type { Difficulty } from '@/types';
 
 export default function PlayScreen() {
   const { id, difficulty } = useLocalSearchParams<{ id: string; difficulty?: string }>();
@@ -47,10 +45,6 @@ export default function PlayScreen() {
   const [author, setAuthor] = useState<string | null>(null);
   const [quoteId, setQuoteId] = useState<number | null>(null);
   const [puzzleDifficulty, setPuzzleDifficulty] = useState<Difficulty>(1);
-  const [coinsEarned, setCoinsEarned] = useState(0);
-  const [doubled, setDoubled] = useState(false);
-  const [doubling, setDoubling] = useState(false);
-  const [milestone, setMilestone] = useState<Milestone | null>(null);
 
   const puzzle = useGameStore((s) => s.puzzle);
   const status = useGameStore((s) => s.status);
@@ -58,43 +52,30 @@ export default function PlayScreen() {
   const load = useGameStore((s) => s.load);
   const reset = useGameStore((s) => s.reset);
   const awardCoins = usePlayerStore((s) => s.awardCoins);
-  const adsRemoved = useSettingsStore((s) => s.adsRemoved);
-
-  // Opt-in rewarded ad: doubles the level's coins only if watched to completion.
-  const handleDoubleIt = useCallback(async () => {
-    if (doubled || doubling) return;
-    setDoubling(true);
-    const earned = await showRewarded();
-    if (earned) {
-      await awardCoins(coinsEarned);
-      setCoinsEarned((c) => c * 2);
-      setDoubled(true);
-    }
-    setDoubling(false);
-  }, [doubled, doubling, coinsEarned, awardCoins]);
-
-  // Move to the next puzzle, possibly showing a frequency-capped interstitial.
-  // Uses a ref so it doesn't depend on loadPuzzle (defined below).
-  const loadPuzzleRef = useRef<(which: string) => void>(() => {});
-  const handleNext = useCallback(async () => {
-    await maybeShowInterstitial(adsRemoved, Date.now());
-    loadPuzzleRef.current('new');
-  }, [adsRemoved]);
 
   usePersistProgress(quoteId, {
     onSolved: async () => {
       haptics.success();
       const reward = COIN_REWARD[puzzleDifficulty];
-      setCoinsEarned(reward);
       await awardCoins(reward);
+      let milestone = null;
       try {
         const db = await getDatabase();
-        const result = await recordLevelCleared(db, localDateString(new Date()), reward);
+        const r = await recordLevelCleared(db, localDateString(new Date()), reward);
         await usePlayerStore.getState().hydrate(); // sync streak + milestone grants
-        if (result.milestone) setMilestone(result.milestone);
+        milestone = r.milestone;
       } catch {
         /* streak update is best-effort */
       }
+      useResultStore.getState().setResult({
+        quoteId: quoteId ?? 0,
+        quote: useGameStore.getState().puzzle?.text ?? '',
+        author,
+        coinsEarned: reward,
+        difficulty: puzzleDifficulty,
+        milestone,
+      });
+      router.replace('/result');
     },
   });
 
@@ -113,15 +94,13 @@ export default function PlayScreen() {
           setError('No more puzzles — you solved them all!');
           return;
         }
-        // Resume any saved guesses for this quote.
         const progress = await getProgress(db, row.id);
         setAuthor(row.author);
         setQuoteId(row.id);
         setPuzzleDifficulty(row.difficulty as Difficulty);
-        setCoinsEarned(0);
-        setDoubled(false);
-        setMilestone(null);
-        load(toQuoteInput(row), parseGuesses(progress?.guesses ?? null));
+        // Resume saved progress if any; otherwise let load() pre-fill a foothold.
+        const resume = progress?.guesses ? parseGuesses(progress.guesses) : undefined;
+        load(toQuoteInput(row), resume);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load puzzle');
       } finally {
@@ -130,7 +109,6 @@ export default function PlayScreen() {
     },
     [load, difficulty],
   );
-  loadPuzzleRef.current = loadPuzzle;
 
   useEffect(() => {
     loadPuzzle(id);
@@ -156,65 +134,27 @@ export default function PlayScreen() {
             </Pressable>
           </View>
         ) : (
-          <ScrollView
-            contentContainerStyle={styles.gridScroll}
-            showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={styles.gridScroll} showsVerticalScrollIndicator={false}>
             {puzzle && <PuzzleGrid puzzle={puzzle} />}
           </ScrollView>
-        )}
-
-        {status === 'won' && (
-          <Animated.View
-            entering={ZoomIn.springify().damping(14)}
-            style={[styles.winBanner, { backgroundColor: theme.success }]}>
-            <ThemedText themeColor="primaryText" style={styles.winTitle}>
-              Solved! 🎉
-            </ThemedText>
-            {author && (
-              <ThemedText themeColor="primaryText" style={styles.winAuthor}>
-                — {author}
-              </ThemedText>
-            )}
-            <View style={styles.coinsEarned}>
-              <ThemedText themeColor="primaryText" style={styles.coinsEarnedText}>
-                + {coinsEarned}
-              </ThemedText>
-              <ThemedText style={[styles.coinDot, { color: theme.coin }]}>●</ThemedText>
-            </View>
-
-            {!doubled && (
-              <Pressable
-                onPress={handleDoubleIt}
-                disabled={doubling}
-                style={[styles.button, styles.doubleButton, { backgroundColor: theme.coin, opacity: doubling ? 0.6 : 1 }]}>
-                <ThemedText style={[styles.buttonText, styles.darkButtonText]}>
-                  {doubling ? 'Loading ad…' : '✨ Double it (watch ad)'}
-                </ThemedText>
-              </Pressable>
-            )}
-
-            <Pressable onPress={handleNext} style={[styles.button, styles.winButton]}>
-              <ThemedText style={[styles.buttonText, { color: theme.success }]}>Next puzzle</ThemedText>
-            </Pressable>
-          </Animated.View>
         )}
 
         {status === 'lost' && (
           <Animated.View
             entering={ZoomIn.springify().damping(14)}
-            style={[styles.winBanner, { backgroundColor: theme.danger }]}>
-            <ThemedText themeColor="primaryText" style={styles.winTitle}>
+            style={[styles.banner, { backgroundColor: theme.danger }]}>
+            <ThemedText themeColor="primaryText" style={styles.bannerTitle}>
               Out of guesses 😕
             </ThemedText>
-            <ThemedText themeColor="primaryText" style={styles.winAuthor}>
+            <ThemedText themeColor="primaryText" style={styles.bannerSub}>
               Better luck on the next one!
             </ThemedText>
             <Pressable
               onPress={() => loadPuzzle(quoteId != null ? String(quoteId) : 'new')}
-              style={[styles.button, styles.winButton, styles.lostButton]}>
+              style={[styles.button, styles.whiteButton]}>
               <ThemedText style={[styles.buttonText, { color: theme.danger }]}>Try again</ThemedText>
             </Pressable>
-            <Pressable onPress={() => router.back()} style={[styles.button, styles.lostBack]}>
+            <Pressable onPress={() => router.replace('/')} style={[styles.button, styles.bannerGhost]}>
               <ThemedText themeColor="primaryText" style={styles.buttonText}>
                 Back home
               </ThemedText>
@@ -228,8 +168,6 @@ export default function PlayScreen() {
             {hintMode !== 'pick' && <Keyboard />}
           </View>
         )}
-
-        <RewardModal milestone={milestone} onClose={() => setMilestone(null)} />
       </SafeAreaView>
     </ThemedView>
   );
@@ -246,29 +184,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.four,
   },
-  winBanner: {
+  banner: {
     margin: Spacing.three,
     padding: Spacing.four,
     borderRadius: Spacing.four,
     alignItems: 'center',
     gap: Spacing.two,
   },
-  winTitle: { fontSize: 24, fontWeight: '800' },
-  winAuthor: { fontSize: 16 },
-  coinsEarned: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
-  coinsEarnedText: { fontSize: 20, fontWeight: '800' },
-  coinDot: { fontSize: 16 },
-  controls: { gap: Spacing.two, paddingBottom: Spacing.one },
+  bannerTitle: { fontSize: 24, fontWeight: '800' },
+  bannerSub: { fontSize: 16 },
+  controls: { gap: Spacing.three, paddingVertical: Spacing.two },
   button: {
+    alignSelf: 'stretch',
     paddingHorizontal: Spacing.five,
     paddingVertical: Spacing.three,
     borderRadius: Spacing.four,
     alignItems: 'center',
   },
-  winButton: { backgroundColor: '#ffffff', marginTop: Spacing.two, alignSelf: 'stretch' },
-  doubleButton: { marginTop: Spacing.two, alignSelf: 'stretch' },
-  darkButtonText: { color: '#1a1205' },
-  lostButton: { backgroundColor: '#ffffff' },
-  lostBack: { alignSelf: 'stretch' },
+  whiteButton: { backgroundColor: '#ffffff', marginTop: Spacing.two },
+  bannerGhost: { backgroundColor: 'rgba(255,255,255,0.18)' },
   buttonText: { fontSize: 17, fontWeight: '700' },
 });
