@@ -52,3 +52,30 @@ CREATE TABLE IF NOT EXISTS daily_activity (
 
 /** Ensures the single player profile row exists. */
 export const SEED_PLAYER_SQL = `INSERT OR IGNORE INTO player (id) VALUES (1);`;
+
+/**
+ * On-device user-data format version. Bumped whenever the shape of stored user
+ * data changes in a way that needs a migration (e.g. the meaning of
+ * `progress.guesses`). Tracked in the `settings` table (`user_data_version`) —
+ * deliberately distinct from the bundled content DB's PRAGMA `user_version`,
+ * which versions the shipped quotes.
+ */
+export const USER_DATA_VERSION = 2;
+
+/**
+ * Ordered, append-only user-data migrations. On launch, every migration whose
+ * `toVersion` is above the DB's stored version runs once, in order. A DB with no
+ * stored version is treated as v1 (legacy / pre-versioning). Each `sql` must be
+ * harmless to run against empty tables (fresh installs replay all of them).
+ */
+export const USER_DATA_MIGRATIONS: { toVersion: number; description: string; sql: string }[] = [
+  {
+    toVersion: 2,
+    description:
+      'Gameplay moved from a per-code substitution model to per-cell validated ' +
+      'input. Old in-progress guesses are keyed by cipher code, which the per-cell ' +
+      'resume path misreads as cell ids (corrupt board). Drop those in-progress ' +
+      'rows; solved rows (status/stats/streak history) are preserved.',
+    sql: `DELETE FROM progress WHERE status = 'in_progress';`,
+  },
+];
