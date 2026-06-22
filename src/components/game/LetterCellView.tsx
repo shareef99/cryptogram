@@ -25,6 +25,11 @@ export function LetterCellView({ cell }: { cell: LetterCell }) {
   const selected = useGameStore((s) => s.selectedCellId === id);
   const highlighted = useGameStore((s) => s.hintMode === 'pick' && !s.cellGuesses[id]);
   const wrong = useGameStore((s) => s.wrongCellId === id);
+  // Hide the code number once every cell sharing this code is filled.
+  const codeDone = useGameStore((s) => {
+    const ids = s.cellsByCode[cell.code];
+    return !!ids && ids.every((cid) => !!s.cellGuesses[cid]);
+  });
   const pressCell = useGameStore((s) => s.pressCell);
 
   const scale = useSharedValue(1);
@@ -74,7 +79,7 @@ export function LetterCellView({ cell }: { cell: LetterCell }) {
           {letter}
         </Text>
       </Animated.View>
-      <Text style={[styles.code, { color: theme.cellCode }]}>{cell.code}</Text>
+      <Text style={[styles.code, { color: theme.cellCode }]}>{codeDone ? '' : cell.code}</Text>
     </Pressable>
   );
 }

@@ -10,6 +10,11 @@
 
 import { create } from 'zustand';
 
+import {
+  STARTING_REVEAL_FRACTION,
+  STARTING_REVEAL_MAX,
+  STARTING_REVEAL_MIN,
+} from '@/constants/economy';
 import { buildPuzzle, letterCells, Rng } from '@/game';
 import type { CellGuesses, GameStatus, HintMode, LetterCell, Puzzle, QuoteInput } from '@/types';
 
@@ -21,6 +26,12 @@ type GameState = {
   puzzle: Puzzle | null;
   /** Only correct, locked letters — keyed by cell id. */
   cellGuesses: CellGuesses;
+  /** code -> ids of the cells using it. */
+  cellsByCode: Record<number, number[]>;
+  /** letter -> ids of the cells whose solution is that letter. */
+  cellsByLetter: Record<string, number[]>;
+  /** How many cells were pre-revealed as a starting foothold (not player progress). */
+  givenCount: number;
   selectedCellId: number | null;
   mistakes: number;
   /** Cell that just received a wrong guess (drives the red flash); cleared shortly after. */
@@ -65,9 +76,46 @@ function nextUnsolvedCellId(puzzle: Puzzle, guesses: CellGuesses, fromId: number
   return target ? target.id : null;
 }
 
+/** Group a puzzle's letter cells by code and by solution letter. */
+function buildCellMaps(puzzle: Puzzle) {
+  const cellsByCode: Record<number, number[]> = {};
+  const cellsByLetter: Record<string, number[]> = {};
+  for (const c of letterCells(puzzle)) {
+    (cellsByCode[c.code] ??= []).push(c.id);
+    (cellsByLetter[c.solution] ??= []).push(c.id);
+  }
+  return { cellsByCode, cellsByLetter };
+}
+
+/**
+ * Pre-reveal the most-frequent letters as a starting foothold. Returns the
+ * given cells as a guesses map. Deterministic (frequency order, tie-break by
+ * code), so a given puzzle always starts the same.
+ */
+function buildStartingGiven(
+  puzzle: Puzzle,
+  cellsByCode: Record<number, number[]>,
+): CellGuesses {
+  const count = Math.min(
+    STARTING_REVEAL_MAX,
+    Math.max(STARTING_REVEAL_MIN, Math.round(puzzle.codes.length * STARTING_REVEAL_FRACTION)),
+  );
+  const ranked = [...puzzle.codes].sort(
+    (a, b) => cellsByCode[b].length - cellsByCode[a].length || a - b,
+  );
+  const given: CellGuesses = {};
+  for (const code of ranked.slice(0, count)) {
+    for (const id of cellsByCode[code]) given[id] = puzzle.codeToSolution[code];
+  }
+  return given;
+}
+
 export const useGameStore = create<GameState>((set, get) => ({
   puzzle: null,
   cellGuesses: {},
+  cellsByCode: {},
+  cellsByLetter: {},
+  givenCount: 0,
   selectedCellId: null,
   mistakes: 0,
   wrongCellId: null,
@@ -77,10 +125,17 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   load: (quote, resume) => {
     const puzzle = buildPuzzle(quote);
-    const cellGuesses = resume ? { ...resume } : {};
+    const { cellsByCode, cellsByLetter } = buildCellMaps(puzzle);
+    // Resume restores saved progress (which already includes any givens). A fresh
+    // puzzle gets a starting foothold of pre-revealed letters.
+    const given = resume ? null : buildStartingGiven(puzzle, cellsByCode);
+    const cellGuesses = resume ? { ...resume } : { ...given };
     const solved = allSolved(puzzle, cellGuesses);
     set({
       puzzle,
+      cellsByCode,
+      cellsByLetter,
+      givenCount: given ? Object.keys(given).length : 0,
       cellGuesses,
       selectedCellId: solved ? null : nextUnsolvedCellId(puzzle, cellGuesses, -1),
       mistakes: 0,
@@ -108,13 +163,20 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   moveSelection: (dir) => {
-    const { puzzle, selectedCellId, status } = get();
+    const { puzzle, cellGuesses, selectedCellId, status } = get();
     if (status !== 'playing' || !puzzle) return;
     const cells = letterCells(puzzle);
     if (cells.length === 0) return;
-    const idx = cells.findIndex((c) => c.id === selectedCellId);
-    const nextIdx = (idx + dir + cells.length) % cells.length;
-    set({ selectedCellId: cells[nextIdx].id });
+    const n = cells.length;
+    const from = Math.max(0, cells.findIndex((c) => c.id === selectedCellId));
+    // Step in `dir`, skipping already-solved cells, until the nearest unfilled one.
+    for (let step = 1; step <= n; step++) {
+      const cand = cells[(((from + dir * step) % n) + n) % n];
+      if (!isCellSolved(cellGuesses, cand)) {
+        set({ selectedCellId: cand.id });
+        return;
+      }
+    }
   },
 
   inputLetter: (letter) => {
@@ -191,6 +253,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       puzzle: null,
       cellGuesses: {},
+      cellsByCode: {},
+      cellsByLetter: {},
+      givenCount: 0,
       selectedCellId: null,
       mistakes: 0,
       wrongCellId: null,

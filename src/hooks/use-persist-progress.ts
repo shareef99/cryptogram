@@ -21,6 +21,7 @@ export function usePersistProgress(quoteId: number | null, options: Options = {}
   const guesses = useGameStore((s) => s.cellGuesses);
   const status = useGameStore((s) => s.status);
   const startedAt = useGameStore((s) => s.startedAt);
+  const givenCount = useGameStore((s) => s.givenCount);
   const solvedHandled = useRef(false);
   const onSolvedRef = useRef(options.onSolved);
   onSolvedRef.current = options.onSolved;
@@ -34,14 +35,15 @@ export function usePersistProgress(quoteId: number | null, options: Options = {}
   // opening a puzzle doesn't create an "in-progress" row / Continue entry.
   useEffect(() => {
     if (quoteId == null || status !== 'playing' || !startedAt) return;
-    if (Object.keys(guesses).length === 0) return;
+    // Don't persist until the player has solved at least one non-given cell.
+    if (Object.keys(guesses).length <= givenCount) return;
     const handle = setTimeout(() => {
       getDatabase()
         .then((db) => saveInProgress(db, quoteId, guesses, startedAt))
         .catch(() => {});
     }, AUTOSAVE_MS);
     return () => clearTimeout(handle);
-  }, [quoteId, guesses, status, startedAt]);
+  }, [quoteId, guesses, status, startedAt, givenCount]);
 
   // Mark solved exactly once on win.
   useEffect(() => {
