@@ -6,17 +6,27 @@ accounts/keys at the end" placeholders.
 
 ## 1. Ads (AdMob)
 
-Currently every ad uses **Google test units** via `src/ads/ad-config.ts`
-(`USE_TEST_ADS = true`). To go live:
+`src/ads/ad-config.ts` uses `USE_TEST_ADS = __DEV__`: **dev builds serve Google
+test ads; release builds serve the real units.** Registered test devices (see
+`TEST_DEVICE_IDS` and the AdMob dashboard) still get test-mode ads in release, so
+QA is safe.
 
-1. Create an AdMob account + app; create a **Rewarded** and an **Interstitial**
-   ad unit.
-2. In `src/ads/ad-config.ts`: set `USE_TEST_ADS = false` and fill `REAL_REWARDED`
-   / `REAL_INTERSTITIAL` with the real unit ids.
-3. In `app.json`, replace the test `androidAppId` / `iosAppId`
-   (`ca-app-pub-3940256099942544~…`) under the `react-native-google-mobile-ads`
-   plugin with your real AdMob **App IDs**.
-4. Register test devices during QA so you don't click live ads.
+**Android — done.** Real App ID (`app.json` → `androidAppId`) and the real
+Rewarded / Interstitial unit ids (`REAL_REWARDED` / `REAL_INTERSTITIAL`) are
+wired in (AdMob app `ca-app-pub-7019308769438850`).
+
+**Still to do:**
+
+1. **iOS:** create an iOS app + Rewarded/Interstitial units in AdMob. Set the
+   real `iosAppId` in `app.json` (still the Google test id today) and make the
+   unit ids platform-aware (`Platform.select`) in `ad-config.ts`.
+2. **Test devices:** on the first real-ad load, copy the hashed device id the
+   native log prints (`setTestDeviceIds(Arrays.asList("…"))`) into
+   `TEST_DEVICE_IDS` for belt-and-suspenders with the dashboard registration.
+3. **Consent + privacy:** add a privacy-policy URL and wire the UMP consent flow
+   (Google User Messaging Platform) before serving ads in the EEA/UK.
+4. Any `app.json` native change needs a fresh native build (`expo prebuild` +
+   rebuild, or an EAS build) — it is not a JS-only reload.
 
 ## 2. Remove-ads IAP
 

@@ -19,6 +19,7 @@ import {
   INTERSTITIAL_MIN_PUZZLES,
   INTERSTITIAL_UNIT_ID,
   REWARDED_UNIT_ID,
+  TEST_DEVICE_IDS,
 } from './ad-config';
 
 let initialized = false;
@@ -27,6 +28,9 @@ export async function initAds(): Promise<void> {
   if (initialized) return;
   initialized = true;
   try {
+    // Must precede initialize(): flags registered devices so real units serve
+    // test-mode ads during QA (no invalid-traffic risk).
+    await mobileAds().setRequestConfiguration({ testDeviceIdentifiers: TEST_DEVICE_IDS });
     await mobileAds().initialize();
   } catch {
     /* SDK init failure shouldn't break the app */
