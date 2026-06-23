@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="cream" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#FCEFD6"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7C249"/>
+      <stop offset="1" stop-color="#E29A12"/>
+    </linearGradient>
+  </defs>
+  <!-- Tight grid filling the canvas (transparent), for the splash over blue. -->
+  <rect x="70" y="70" width="406" height="406" rx="84" fill="url(#cream)"/>
+  <rect x="70" y="70" width="406" height="406" rx="84" fill="none" stroke="#E29A12" stroke-width="22"/>
+  <text x="273" y="285" font-family="Georgia,'Times New Roman',serif" font-size="250" font-weight="700" fill="#16273E" text-anchor="middle" dominant-baseline="central">C</text>
+  <rect x="548" y="70" width="406" height="406" rx="84" fill="url(#gold)"/>
+  <text x="751" y="285" font-family="Arial,Helvetica,sans-serif" font-size="232" font-weight="700" fill="#FFFFFF" text-anchor="middle" dominant-baseline="central">5</text>
+  <rect x="70" y="548" width="406" height="406" rx="84" fill="url(#gold)"/>
+  <text x="273" y="763" font-family="Arial,Helvetica,sans-serif" font-size="232" font-weight="700" fill="#FFFFFF" text-anchor="middle" dominant-baseline="central">2</text>
+  <rect x="548" y="548" width="406" height="406" rx="84" fill="url(#cream)"/>
+  <text x="751" y="763" font-family="Georgia,'Times New Roman',serif" font-size="250" font-weight="700" fill="#16273E" text-anchor="middle" dominant-baseline="central">R</text>
+</svg>

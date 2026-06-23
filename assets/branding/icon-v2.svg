@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3AA4FF"/>
+      <stop offset="1" stop-color="#1160C2"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#FCEFD6"/>
+    </linearGradient>
+    <filter id="sh" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#08254C" flood-opacity="0.40"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="232" fill="url(#bg)"/>
+  <ellipse cx="512" cy="150" rx="540" ry="250" fill="#FFFFFF" opacity="0.10"/>
+  <!-- back tile: a cipher number, peeking -->
+  <g transform="rotate(10 612 538)" filter="url(#sh)">
+    <rect x="470" y="300" width="360" height="436" rx="56" fill="#E8F3FF"/>
+    <text x="650" y="540" font-family="Arial,Helvetica,sans-serif" font-size="210" font-weight="700" fill="#3D7DC4" text-anchor="middle" dominant-baseline="central">7</text>
+  </g>
+  <!-- front tile: the decoded letter + its code -->
+  <g transform="rotate(-7 452 540)" filter="url(#sh)">
+    <rect x="232" y="296" width="392" height="470" rx="60" fill="url(#tile)"/>
+    <text x="428" y="512" font-family="Georgia,'Times New Roman',serif" font-size="270" font-weight="700" fill="#16273E" text-anchor="middle" dominant-baseline="central">C</text>
+    <rect x="346" y="612" width="164" height="6" rx="3" fill="#EADCBE"/>
+    <text x="428" y="686" font-family="Arial,Helvetica,sans-serif" font-size="78" font-weight="700" fill="#E29A12" text-anchor="middle" dominant-baseline="central">3</text>
+  </g>
+</svg>
