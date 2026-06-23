@@ -31,6 +31,6 @@
     <text x="372" y="658" font-family="Arial,Helvetica,sans-serif" font-size="140" font-weight="700" fill="#FFFFFF" text-anchor="middle" dominant-baseline="central">2</text>
     <!-- bottom-right: letter cell -->
     <rect x="530" y="530" width="244" height="244" rx="50" fill="url(#cream)"/>
-    <text x="652" y="658" font-family="Georgia,'Times New Roman',serif" font-size="150" font-weight="700" fill="#16273E" text-anchor="middle" dominant-baseline="central">R</text>
+    <text x="652" y="658" font-family="Georgia,'Times New Roman',serif" font-size="150" font-weight="700" fill="#16273E" text-anchor="middle" dominant-baseline="central">G</text>
   </g>
 </svg>
