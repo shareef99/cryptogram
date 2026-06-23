@@ -4,6 +4,9 @@ Steps to take the app from the current dev build to a production release. Most o
 the app is production-ready; the items below are the deliberate "wire real
 accounts/keys at the end" placeholders.
 
+For the step-by-step Play Store submission flow, see
+[PUBLISHING.md](./PUBLISHING.md).
+
 ## 1. Ads (AdMob)
 
 `src/ads/ad-config.ts` uses `USE_TEST_ADS = __DEV__`: **dev builds serve Google
