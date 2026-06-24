@@ -15,6 +15,7 @@ import {
   spendCoins,
   type PlayerRow,
 } from '@/db';
+import { sounds } from '@/lib/sounds';
 
 type PlayerState = {
   coins: number;
@@ -64,6 +65,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   syncFrom: (row) => set(rowToState(row)),
 
   awardCoins: async (n) => {
+    if (n > 0) sounds.play('coin');
     const db = await getDatabase();
     const coins = await addCoins(db, n);
     set({ coins });
