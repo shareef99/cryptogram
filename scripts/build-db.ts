@@ -14,7 +14,7 @@
  */
 
 import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,7 +22,10 @@ import { isLetter, normalizeText } from '../src/game';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const SOURCE = resolve(ROOT, 'data/quotes-source.json');
+// Sources are merged in order; later files supplement earlier ones (dedup by
+// normalized text below). `quotes-bulk.json` is an optional bootstrap corpus
+// (see scripts/import-quotes-csv.ts) — delete it + rebuild to ship curated only.
+const SOURCES = ['data/quotes-source.json', 'data/quotes-bulk.json'].map((p) => resolve(ROOT, p));
 const OUT = resolve(ROOT, 'assets/db/cryptogram.db');
 
 const CONTENT_VERSION = 1;
@@ -33,7 +36,7 @@ const CONTENT_VERSION = 1;
 const ALLOWED_PUNCTUATION = new Set([' ', "'", '.', ',', '!', '?', ';', ':', '-', '"', '(', ')']);
 
 const MIN_LENGTH = 12;
-const MAX_LENGTH = 140;
+const MAX_LENGTH = 240; // 161–240 form the "long" tier (difficulty 4)
 const MIN_DISTINCT_LETTERS = 5;
 
 type SourceQuote = { text: string; author?: string; category?: string };
@@ -57,7 +60,8 @@ function distinctLetters(text: string): number {
 function difficultyFor(length: number): number {
   if (length <= 40) return 1; // easy / short
   if (length <= 75) return 2; // medium
-  return 3; // hard / long
+  if (length <= 160) return 3; // hard
+  return 4; // long (its own category)
 }
 
 /** Returns the offending character if the text contains a disallowed one. */
@@ -71,9 +75,14 @@ function firstDisallowedChar(text: string): string | null {
 }
 
 function build() {
-  const raw = readFileSync(SOURCE, 'utf8');
-  const source = JSON.parse(raw) as SourceQuote[];
-  if (!Array.isArray(source)) throw new Error('quotes-source.json must be an array');
+  const source: SourceQuote[] = [];
+  for (const file of SOURCES) {
+    if (!existsSync(file)) continue;
+    const parsed = JSON.parse(readFileSync(file, 'utf8')) as unknown;
+    if (!Array.isArray(parsed)) throw new Error(`${file} must be a JSON array`);
+    source.push(...(parsed as SourceQuote[]));
+  }
+  if (source.length === 0) throw new Error('No source quotes found.');
 
   const built: BuiltQuote[] = [];
   const seen = new Set<string>();
@@ -160,7 +169,7 @@ function build() {
   db.exec(`PRAGMA user_version = ${CONTENT_VERSION};`);
 
   // Summary.
-  const byDifficulty = [1, 2, 3].map(
+  const byDifficulty = [1, 2, 3, 4].map(
     (d) => `${d}:${built.filter((q) => q.difficulty === d).length}`,
   );
   db.close();

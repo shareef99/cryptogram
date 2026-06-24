@@ -2,7 +2,7 @@
  * Database row & query-result types.
  */
 
-export type Difficulty = 1 | 2 | 3;
+export type Difficulty = 1 | 2 | 3 | 4; // 4 = long
 
 /** A row from the `quotes` table (snake_case as stored). */
 export type QuoteRow = {

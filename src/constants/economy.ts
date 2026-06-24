@@ -5,8 +5,8 @@
 
 import type { Difficulty } from '@/types';
 
-/** Base coins granted when a puzzle is cleared, by difficulty. */
-export const COIN_REWARD: Record<Difficulty, number> = { 1: 10, 2: 20, 3: 30 };
+/** Base coins granted when a puzzle is cleared, by difficulty (4 = long). */
+export const COIN_REWARD: Record<Difficulty, number> = { 1: 10, 2: 20, 3: 30, 4: 50 };
 
 /** Coin cost of Hint 1 ("Reveal") — reveals one chosen/random letter. */
 export const HINT1_COST = 15;

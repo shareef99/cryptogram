@@ -8,6 +8,7 @@
 
 import * as SQLite from 'expo-sqlite';
 
+import { migrateUserData } from './migrate';
 import { DB_NAME, SEED_PLAYER_SQL, USER_TABLES_SQL } from './schema';
 
 // Metro bundles the prebuilt DB as an asset (see metro.config.js → assetExts).
@@ -27,6 +28,9 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
   await db.execAsync('PRAGMA foreign_keys = ON;');
   await db.execAsync(USER_TABLES_SQL);
   await db.runAsync(SEED_PLAYER_SQL);
+  // Upgrade incompatible user data left by older app versions (e.g. resume
+  // guesses from the pre-per-cell model). Safe/no-op once already current.
+  await migrateUserData(db);
   return db;
 }
 

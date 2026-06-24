@@ -5,7 +5,7 @@
  */
 
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,12 +17,15 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getDatabase, getInProgressQuote, getQuoteCounts } from '@/db';
 import { useTheme } from '@/hooks/use-theme';
 import { usePlayerStore } from '@/store/player-store';
+import { useSettingsStore } from '@/store/settings-store';
+import { useUiStore } from '@/store/ui-store';
 import type { Difficulty, QuoteCounts } from '@/types';
 
 const DIFFICULTIES: { value: Difficulty; label: string }[] = [
   { value: 1, label: 'Easy' },
   { value: 2, label: 'Medium' },
   { value: 3, label: 'Hard' },
+  { value: 4, label: 'Long' },
 ];
 
 function startPuzzle(difficulty?: Difficulty) {
@@ -37,6 +40,18 @@ export default function HomeScreen() {
   const [counts, setCounts] = useState<QuoteCounts | null>(null);
   const [continueId, setContinueId] = useState<number | null>(null);
   const coins = usePlayerStore((s) => s.coins);
+  const settingsHydrated = useSettingsStore((s) => s.hydrated);
+
+  // First launch: once settings are loaded, show the how-to overlay a single
+  // time and remember it. Runs when hydration flips true (async at startup).
+  useEffect(() => {
+    if (!settingsHydrated) return;
+    const { onboardingSeen, setOnboardingSeen } = useSettingsStore.getState();
+    if (!onboardingSeen) {
+      useUiStore.getState().showHelp();
+      setOnboardingSeen(true).catch(() => {});
+    }
+  }, [settingsHydrated]);
 
   useFocusEffect(
     useCallback(() => {
@@ -214,7 +229,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   primaryLabel: { fontSize: 19, fontWeight: '700' },
-  difficultyRow: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.two },
+  difficultyRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.two },
   chip: {
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,

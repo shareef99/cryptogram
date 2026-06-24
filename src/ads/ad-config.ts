@@ -1,20 +1,32 @@
 /**
- * Ad configuration. Uses Google's official TEST ad units (always serve test
- * ads, no AdMob account needed). Flip `USE_TEST_ADS` to false and drop in real
- * unit ids for production. All ad usage routes through here.
+ * Ad configuration. All ad usage routes through here.
+ *
+ * Dev builds use Google's official TEST ad units (always fill, zero policy risk);
+ * release builds use the real AdMob units below. A device registered under
+ * TEST_DEVICE_IDS (or in the AdMob dashboard) still receives test-mode ads even
+ * against the real units, so production QA never risks an invalid-traffic strike.
  */
 
 import { TestIds } from 'react-native-google-mobile-ads';
 
-/** While true, every ad is a Google test ad. Set false for production. */
-export const USE_TEST_ADS = true;
+/** Test ads in development; real ads in release builds. */
+export const USE_TEST_ADS = __DEV__;
 
-// Real unit ids go here when shipping (kept empty until an AdMob account exists).
-const REAL_REWARDED = '';
-const REAL_INTERSTITIAL = '';
+// Real AdMob unit ids (Android app ca-app-pub-7019308769438850).
+// iOS ships its own app + units in AdMob before an iOS release — see RELEASE.md.
+const REAL_REWARDED = 'ca-app-pub-7019308769438850/1945461465';
+const REAL_INTERSTITIAL = 'ca-app-pub-7019308769438850/4896882262';
 
 export const REWARDED_UNIT_ID = USE_TEST_ADS ? TestIds.REWARDED : REAL_REWARDED;
 export const INTERSTITIAL_UNIT_ID = USE_TEST_ADS ? TestIds.INTERSTITIAL : REAL_INTERSTITIAL;
+
+/**
+ * Devices that receive test-mode ads even when the real units are live. Add the
+ * *hashed* device id the native log prints on the first ad load (look for
+ * `setTestDeviceIds(Arrays.asList("…"))`); `'EMULATOR'` covers simulators.
+ * Registering the device's advertising id in the AdMob dashboard does the same.
+ */
+export const TEST_DEVICE_IDS: string[] = ['EMULATOR'];
 
 /** Interstitials are frequency-capped to stay non-intrusive (see DECISIONS D13). */
 export const INTERSTITIAL_MIN_PUZZLES = 3; // at least this many clears between ads

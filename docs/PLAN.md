@@ -15,6 +15,7 @@ quotes**, resume-in-progress, coins economy, daily streaks, non-intrusive ads + 
 IAP.
 
 **Deferred to post-v1:** sound effects, daily-challenge mode, leaderboards.
+See [IDEAS.md](./IDEAS.md) for the full engagement-feature backlog & roadmap.
 
 ## 2. Tech foundation (already in place — reuse)
 

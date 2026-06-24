@@ -11,7 +11,7 @@ import { copyFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SEED_PLAYER_SQL, USER_TABLES_SQL } from '../src/db/schema';
+import { SEED_PLAYER_SQL, USER_DATA_MIGRATIONS, USER_TABLES_SQL } from '../src/db/schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -56,6 +56,30 @@ for (const t of ['quotes', 'meta', 'progress', 'player', 'settings', 'daily_acti
 }
 const player = db.prepare('SELECT * FROM player WHERE id=1').get() as { coins: number } | undefined;
 check('player row seeded with 0 coins', !!player && player.coins === 0);
+
+// Migrations run against an isolated in-memory DB so they can't perturb the
+// content-DB checks. Mirrors migrate.ts, which applies the same SQL at runtime.
+console.log('\nUser-data migration (legacy → latest)');
+{
+  const m = new DatabaseSync(':memory:');
+  m.exec(USER_TABLES_SQL);
+  m.exec(SEED_PLAYER_SQL);
+  // Legacy DB: an in-progress row (old per-code guesses) + a solved row.
+  m.prepare(
+    "INSERT INTO progress (quote_id, status, guesses) VALUES (1, 'in_progress', '{\"5\":\"E\"}')",
+  ).run();
+  m.prepare("INSERT INTO progress (quote_id, status, solved_at) VALUES (2, 'solved', 1)").run();
+  for (const mig of USER_DATA_MIGRATIONS) m.exec(mig.sql);
+  const inProg = (
+    m.prepare("SELECT COUNT(*) c FROM progress WHERE status='in_progress'").get() as { c: number }
+  ).c;
+  const solved = (
+    m.prepare("SELECT COUNT(*) c FROM progress WHERE status='solved'").get() as { c: number }
+  ).c;
+  check('migration clears incompatible in-progress rows', inProg === 0);
+  check('migration keeps solved rows', solved === 1);
+  m.close();
+}
 
 console.log('\nQueries');
 const anyUnsolved = db.prepare(RANDOM_UNSOLVED).get({ difficulty: null }) as { id: number } | undefined;

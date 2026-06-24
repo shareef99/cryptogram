@@ -16,6 +16,7 @@ import {
   STARTING_REVEAL_MIN,
 } from '@/constants/economy';
 import { buildPuzzle, letterCells, Rng } from '@/game';
+import { sounds } from '@/lib/sounds';
 import type { CellGuesses, GameStatus, HintMode, LetterCell, Puzzle, QuoteInput } from '@/types';
 
 export type { CellGuesses, GameStatus, HintMode } from '@/types';
@@ -191,6 +192,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (upper === cell.solution) {
       const next: CellGuesses = { ...cellGuesses, [cell.id]: upper };
       const solved = allSolved(puzzle, next);
+      sounds.play(solved ? 'win' : 'correct');
       set({
         cellGuesses: next,
         status: solved ? 'won' : 'playing',
@@ -199,6 +201,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
     } else {
       const nextMistakes = mistakes + 1;
+      sounds.play('wrong');
       set({
         mistakes: nextMistakes,
         wrongCellId: cell.id,
@@ -218,6 +221,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!cell || cellGuesses[cellId]) return;
     const next: CellGuesses = { ...cellGuesses, [cellId]: cell.solution };
     const solved = allSolved(puzzle, next);
+    sounds.play(solved ? 'win' : 'reveal');
     set({
       cellGuesses: next,
       status: solved ? 'won' : 'playing',
