@@ -67,6 +67,7 @@ export async function getQuoteCounts(db: SQLiteDatabase): Promise<QuoteCounts> {
     1: { total: 0, solved: 0 },
     2: { total: 0, solved: 0 },
     3: { total: 0, solved: 0 },
+    4: { total: 0, solved: 0 },
   } as Record<Difficulty, { total: number; solved: number }>;
 
   let total = 0;

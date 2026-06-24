@@ -25,6 +25,7 @@ const DIFFICULTIES: { value: Difficulty; label: string }[] = [
   { value: 1, label: 'Easy' },
   { value: 2, label: 'Medium' },
   { value: 3, label: 'Hard' },
+  { value: 4, label: 'Long' },
 ];
 
 function startPuzzle(difficulty?: Difficulty) {
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   primaryLabel: { fontSize: 19, fontWeight: '700' },
-  difficultyRow: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.two },
+  difficultyRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.two },
   chip: {
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,

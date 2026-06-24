@@ -23,11 +23,9 @@ import { isLetter, normalizeText } from '../src/game';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 // Sources are merged in order; later files supplement earlier ones (dedup by
-// normalized text below). `quotes-quotable.json` is an optional bootstrap corpus
-// (see scripts/import-quotable.ts) — delete it + rebuild to ship curated only.
-const SOURCES = ['data/quotes-source.json', 'data/quotes-quotable.json'].map((p) =>
-  resolve(ROOT, p),
-);
+// normalized text below). `quotes-bulk.json` is an optional bootstrap corpus
+// (see scripts/import-quotes-csv.ts) — delete it + rebuild to ship curated only.
+const SOURCES = ['data/quotes-source.json', 'data/quotes-bulk.json'].map((p) => resolve(ROOT, p));
 const OUT = resolve(ROOT, 'assets/db/cryptogram.db');
 
 const CONTENT_VERSION = 1;
@@ -38,7 +36,7 @@ const CONTENT_VERSION = 1;
 const ALLOWED_PUNCTUATION = new Set([' ', "'", '.', ',', '!', '?', ';', ':', '-', '"', '(', ')']);
 
 const MIN_LENGTH = 12;
-const MAX_LENGTH = 140;
+const MAX_LENGTH = 240; // 161–240 form the "long" tier (difficulty 4)
 const MIN_DISTINCT_LETTERS = 5;
 
 type SourceQuote = { text: string; author?: string; category?: string };
@@ -62,7 +60,8 @@ function distinctLetters(text: string): number {
 function difficultyFor(length: number): number {
   if (length <= 40) return 1; // easy / short
   if (length <= 75) return 2; // medium
-  return 3; // hard / long
+  if (length <= 160) return 3; // hard
+  return 4; // long (its own category)
 }
 
 /** Returns the offending character if the text contains a disallowed one. */
@@ -170,7 +169,7 @@ function build() {
   db.exec(`PRAGMA user_version = ${CONTENT_VERSION};`);
 
   // Summary.
-  const byDifficulty = [1, 2, 3].map(
+  const byDifficulty = [1, 2, 3, 4].map(
     (d) => `${d}:${built.filter((q) => q.difficulty === d).length}`,
   );
   db.close();

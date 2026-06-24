@@ -44,5 +44,9 @@ app-example
 
 tmp
 
+# raw quote datasets (bootstrap inputs) — only the cleaned data/quotes-*.json is committed
+data/quotes.csv
+data/quotes.json
+
 # local project guide
 CLAUDE.md

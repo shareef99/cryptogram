@@ -176,6 +176,22 @@ gives us a clean, extensible path for future user-data format changes. Content v
 independent so shipping new quotes never forces a user-data migration. Each migration is written
 to be harmless on empty tables, so fresh installs simply replay them as a no-op.
 
+## D20 — "Long" puzzle tier + bulk bootstrap corpus ✅
+
+**Decision:** Length defines the tier — ≤40 Easy, ≤75 Medium, ≤160 Hard, **161–240
+Long** (`difficulty = 4`, 50-coin reward). The corpus is bootstrapped from a large
+CSV dataset via `scripts/import-quotes-csv.ts`, which streams ~500k rows, cleans
+author/text, caps each author (the raw set is flooded by a few prolific authors),
+dedupes, and fills balanced length buckets (the file is ~popularity-ordered, so
+first-come ≈ best). Output `data/quotes-bulk.json` (~11k) is merged by `build:db`;
+raw datasets (`data/quotes.csv`, `data/quotes.json`) are gitignored.
+**Why:** Players asked for long quotes as their own mode; binning by length keeps
+selection logic unchanged (a 4th difficulty value). Per-author capping + ordered
+selection gives volume _and_ quality without a popularity column.
+**Bootstrap caveat:** like D8, this dataset is for development / closed-test volume;
+swap for a clean licensed/PD set before public launch (delete the bulk file +
+rebuild). Replaces the earlier quotable bootstrap.
+
 ---
 
 ## Open items to resolve
