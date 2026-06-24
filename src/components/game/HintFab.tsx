@@ -48,9 +48,9 @@ export function HintFab({
 
 const styles = StyleSheet.create({
   fab: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,

@@ -7,12 +7,13 @@
 
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GameHeader } from '@/components/game/GameHeader';
-import { HintControls } from '@/components/game/HintControls';
+import { HintFabs } from '@/components/game/HintFabs';
+import { HintPickBar } from '@/components/game/HintPickBar';
 import { Keyboard } from '@/components/game/Keyboard';
 import { PuzzleGrid } from '@/components/game/PuzzleGrid';
 import { ThemedText } from '@/components/themed-text';
@@ -28,6 +29,7 @@ import {
   recordLevelCleared,
   toQuoteInput,
 } from '@/db';
+import { useHints } from '@/hooks/use-hints';
 import { usePersistProgress } from '@/hooks/use-persist-progress';
 import { useTheme } from '@/hooks/use-theme';
 import { haptics } from '@/lib/haptics';
@@ -48,9 +50,9 @@ export default function PlayScreen() {
 
   const puzzle = useGameStore((s) => s.puzzle);
   const status = useGameStore((s) => s.status);
-  const hintMode = useGameStore((s) => s.hintMode);
   const load = useGameStore((s) => s.load);
   const reset = useGameStore((s) => s.reset);
+  const hints = useHints(quoteId);
   const awardCoins = usePlayerStore((s) => s.awardCoins);
 
   usePersistProgress(quoteId, {
@@ -80,7 +82,7 @@ export default function PlayScreen() {
   });
 
   const loadPuzzle = useCallback(
-    async (which: string) => {
+    async (which: string, opts?: { fresh?: boolean }) => {
       setLoading(true);
       setError(null);
       try {
@@ -94,7 +96,9 @@ export default function PlayScreen() {
           setError('No more puzzles — you solved them all!');
           return;
         }
-        const progress = await getProgress(db, row.id);
+        // A fresh restart (e.g. after losing) ignores saved guesses so the puzzle
+        // begins from its deterministic starting foothold again.
+        const progress = opts?.fresh ? null : await getProgress(db, row.id);
         setAuthor(row.author);
         setQuoteId(row.id);
         setPuzzleDifficulty(row.difficulty as Difficulty);
@@ -120,24 +124,30 @@ export default function PlayScreen() {
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <GameHeader />
 
-        {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={theme.primary} />
-          </View>
-        ) : error ? (
-          <View style={styles.center}>
-            <ThemedText style={styles.errorText}>{error}</ThemedText>
-            <Pressable onPress={() => router.back()} style={[styles.button, { backgroundColor: theme.primary }]}>
-              <ThemedText themeColor="primaryText" style={styles.buttonText}>
-                Back
-              </ThemedText>
-            </Pressable>
-          </View>
-        ) : (
-          <ScrollView contentContainerStyle={styles.gridScroll} showsVerticalScrollIndicator={false}>
-            {puzzle && <PuzzleGrid puzzle={puzzle} />}
-          </ScrollView>
-        )}
+        <View style={styles.gridArea}>
+          {loading ? (
+            <View style={styles.center}>
+              <ActivityIndicator color={theme.primary} />
+            </View>
+          ) : error ? (
+            <View style={styles.center}>
+              <ThemedText style={styles.errorText}>{error}</ThemedText>
+              <Pressable onPress={() => router.back()} style={[styles.button, { backgroundColor: theme.primary }]}>
+                <ThemedText themeColor="primaryText" style={styles.buttonText}>
+                  Back
+                </ThemedText>
+              </Pressable>
+            </View>
+          ) : (
+            puzzle && <PuzzleGrid puzzle={puzzle} />
+          )}
+
+          {!loading && !error && status === 'playing' && hints.hintMode !== 'pick' && (
+            <View style={styles.floatingHints} pointerEvents="box-none">
+              <HintFabs hints={hints} />
+            </View>
+          )}
+        </View>
 
         {status === 'lost' && (
           <Animated.View
@@ -150,7 +160,7 @@ export default function PlayScreen() {
               Better luck on the next one!
             </ThemedText>
             <Pressable
-              onPress={() => loadPuzzle(quoteId != null ? String(quoteId) : 'new')}
+              onPress={() => loadPuzzle(quoteId != null ? String(quoteId) : 'new', { fresh: true })}
               style={[styles.button, styles.whiteButton]}>
               <ThemedText style={[styles.buttonText, { color: theme.danger }]}>Try again</ThemedText>
             </Pressable>
@@ -164,8 +174,11 @@ export default function PlayScreen() {
 
         {!loading && !error && status === 'playing' && (
           <View style={styles.controls}>
-            <HintControls quoteId={quoteId} />
-            {hintMode !== 'pick' && <Keyboard />}
+            {hints.hintMode === 'pick' ? (
+              <HintPickBar onSurprise={hints.surprise} onCancel={hints.cancelReveal} />
+            ) : (
+              <Keyboard />
+            )}
           </View>
         )}
       </SafeAreaView>
@@ -178,12 +191,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, width: '100%', maxWidth: MaxContentWidth },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.three, padding: Spacing.four },
   errorText: { textAlign: 'center' },
-  gridScroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.four,
-  },
+  gridArea: { flex: 1, position: 'relative' },
+  floatingHints: { position: 'absolute', right: Spacing.three, bottom: Spacing.three },
   banner: {
     margin: Spacing.three,
     padding: Spacing.four,

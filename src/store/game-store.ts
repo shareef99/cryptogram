@@ -104,9 +104,12 @@ function buildStartingGiven(
   const ranked = [...puzzle.codes].sort(
     (a, b) => cellsByCode[b].length - cellsByCode[a].length || a - b,
   );
+  // Reveal ONE (deterministically-chosen) instance per starting letter — a
+  // foothold, not a freebie. Seeded by puzzle id so a retry starts identically.
+  const rng = new Rng(`given-${puzzle.id}`);
   const given: CellGuesses = {};
   for (const code of ranked.slice(0, count)) {
-    for (const id of cellsByCode[code]) given[id] = puzzle.codeToSolution[code];
+    given[rng.pick(cellsByCode[code])] = puzzle.codeToSolution[code];
   }
   return given;
 }
