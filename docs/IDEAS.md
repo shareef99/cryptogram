@@ -1,7 +1,7 @@
 # Feature Ideas & Engagement Roadmap
 
 A living backlog of game mechanics and engagement features, mostly built on the
-large quote corpus (the corpus is a *content engine* we can slice into modes).
+large quote corpus (the corpus is a _content engine_ we can slice into modes).
 Captured from brainstorming — not all will ship, and not in this order.
 
 > Status: `[ ]` idea · `[~]` planned/speccing · `[x]` shipped
@@ -26,6 +26,7 @@ column (or a `quote_tags` table) in `build-db.ts` / schema. Do this once.
 ## A. User-proposed ideas
 
 ### A1. Monthly category challenge (tiered packs) `[ ]`
+
 - A themed challenge (by tag/category) with **30 / 60 / 90** completion tiers.
 - **Floor rounding** of rewards: finishing 45 → you get the **30** reward (forgiving,
   no all-or-nothing punishment).
@@ -35,6 +36,7 @@ column (or a `quote_tags` table) in `build-db.ts` / schema. Do this once.
 - **Depends on:** tags preservation.
 
 ### A2. Daily quote + calendar `[ ]`
+
 - One puzzle **per day**, **same for everyone** (deterministic from the date via the
   existing seeded RNG → also enables the Share card, C1).
 - **Calendar view**; future dates disabled; **allow backfilling missed past days**
@@ -53,7 +55,7 @@ column (or a `quote_tags` table) in `build-db.ts` / schema. Do this once.
   Retention **and** a coin sink.
 - **B3. Daily goal** `[ ]` — "Solve 3 today → bonus coins" (separate from the streak).
 - **B4. Favorites / Quote book** `[ ]` — save liked quotes into a collection. Low
-  effort, gives the *content itself* replay value.
+  effort, gives the _content itself_ replay value.
 - **B5. XP / player level** `[ ]` — overall level from solving; unlocks cosmetics.
 
 ## C. Growth / virality
@@ -84,30 +86,32 @@ column (or a `quote_tags` table) in `build-db.ts` / schema. Do this once.
 
 ## Prioritization (effort × impact)
 
-| Feature | Impact | Effort |
-|---|---|---|
-| C1 Share card | High (discovery) | **Low** |
-| A2 Daily + calendar | High (retention) | Med |
-| B1 Achievements | Med–High | Low–Med |
-| B2 Streak freeze | Med | Low |
-| B3 Daily goal | Med | Low |
-| A1 Theme/author packs | High | High (needs tags) |
-| D1–D3 Extra modes | Med (each) | Med (each) |
-| E1–E4 Cosmetics / sinks | Med | Med |
+| Feature                 | Impact           | Effort            |
+| ----------------------- | ---------------- | ----------------- |
+| C1 Share card           | High (discovery) | **Low**           |
+| A2 Daily + calendar     | High (retention) | Med               |
+| B1 Achievements         | Med–High         | Low–Med           |
+| B2 Streak freeze        | Med              | Low               |
+| B3 Daily goal           | Med              | Low               |
+| A1 Theme/author packs   | High             | High (needs tags) |
+| D1–D3 Extra modes       | Med (each)       | Med (each)        |
+| E1–E4 Cosmetics / sinks | Med              | Med               |
 
 ## Suggested sequencing vs launch
 
 We're mid-closed-test, trying to launch — avoid feature-creep that delays it.
 
 **v1 (small, high-leverage):**
+
 1. A2 Daily challenge + calendar (retention)
 2. C1 Share card (discovery — cheapest growth lever)
 3. A couple of B1 achievements (stickiness)
 
 **Post-launch updates** (each update = an ASO bump + a reason testers/users return):
+
 - Tags preservation → A1 theme/author packs
 - D1–D3 extra modes
 - E1–E4 cosmetics + coin sinks
 
-Shipping packs/modes *as updates* is a feature, not a compromise — Play rewards
+Shipping packs/modes _as updates_ is a feature, not a compromise — Play rewards
 apps that update, and each gives a changelog to market.
