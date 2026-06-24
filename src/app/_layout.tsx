@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initAds } from '@/ads';
+import { HowToPlay } from '@/components/HowToPlay';
 import { useResolvedScheme } from '@/hooks/use-theme';
 import { usePlayerStore } from '@/store/player-store';
 import { useSettingsStore } from '@/store/settings-store';
@@ -27,6 +28,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
           </Stack>
+          <HowToPlay />
           <StatusBar style={isDark ? 'light' : 'dark'} />
         </ThemeProvider>
       </SafeAreaProvider>

@@ -44,4 +44,5 @@ export const SETTING_KEYS = {
   sound: 'sound_enabled',
   themeMode: 'theme_mode',
   userDataVersion: 'user_data_version',
+  onboardingSeen: 'onboarding_seen',
 } as const;

@@ -15,6 +15,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { IAP_AVAILABLE, purchaseRemoveAds } from '@/iap';
 import { usePlayerStore } from '@/store/player-store';
 import { useSettingsStore } from '@/store/settings-store';
+import { useUiStore } from '@/store/ui-store';
 import type { ThemeMode } from '@/types';
 
 const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
@@ -96,6 +97,15 @@ export default function SettingsScreen() {
             <SettingRow label="Sound">
               <Switch value={soundEnabled} onValueChange={setSoundEnabled} />
             </SettingRow>
+          </ThemedView>
+
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <Pressable onPress={() => useUiStore.getState().showHelp()} style={styles.rowButton}>
+              <ThemedText style={styles.rowLabel}>How to play</ThemedText>
+              <ThemedText themeColor="primary" style={styles.rowAction}>
+                View
+              </ThemedText>
+            </Pressable>
           </ThemedView>
 
           <ThemedView type="backgroundElement" style={styles.card}>
