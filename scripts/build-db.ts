@@ -19,6 +19,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { isLetter, normalizeText } from '../src/game';
+import { CONTENT_VERSION } from '../src/db/schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -28,8 +29,6 @@ const ROOT = resolve(__dirname, '..');
 const SOURCES = ['data/quotes-source.json', 'data/quotes-bulk.json'].map((p) => resolve(ROOT, p));
 const OUT = resolve(ROOT, 'assets/db/cryptogram.db');
 
-const CONTENT_VERSION = 1;
-
 // Characters allowed in a puzzle after normalization: letters, space, and a
 // small set of punctuation. Anything else → the quote is skipped (keeps puzzles
 // clean and easy to lay out). Digits are intentionally excluded.
@@ -38,6 +37,7 @@ const ALLOWED_PUNCTUATION = new Set([' ', "'", '.', ',', '!', '?', ';', ':', '-'
 const MIN_LENGTH = 12;
 const MAX_LENGTH = 240; // 161–240 form the "long" tier (difficulty 4)
 const MIN_DISTINCT_LETTERS = 5;
+// CONTENT_VERSION is imported from src/db/schema (single source of truth).
 
 type SourceQuote = { text: string; author?: string; category?: string };
 

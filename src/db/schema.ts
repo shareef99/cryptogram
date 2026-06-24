@@ -11,7 +11,13 @@
 /** Working database filename (in the on-device SQLite directory). */
 export const DB_NAME = 'cryptogram.db';
 
-/** Content schema/version shipped in the bundled asset. Mirrors build-db.ts. */
+/**
+ * Version of the bundled content (quotes). The single source of truth — both
+ * build-db.ts (stamps it into the asset's `meta`) and the runtime content sync
+ * import this. **Bump it whenever you rebuild the DB with new/changed quotes**:
+ * on the next launch after an app update, `syncContent` merges the new quotes
+ * into already-installed devices (which keep their old DB otherwise).
+ */
 export const CONTENT_VERSION = 1;
 
 /**

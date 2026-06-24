@@ -45,13 +45,19 @@ real purchases:
 
 ## 3. Quote corpus
 
-`data/quotes-source.json` ships ~60 curated **public-domain** quotes. Before
-launch, expand to the full public-domain corpus (see DECISIONS D8), then rebuild
-the bundled DB:
+`data/quotes-source.json` ships ~60 curated **public-domain** quotes; a larger
+bootstrap corpus is merged from `data/quotes-bulk.json` (see DECISIONS D20).
+Before launch, expand to the full public-domain corpus (see DECISIONS D8), then
+rebuild the bundled DB:
 
 ```
 pnpm build:db
 ```
+
+**Whenever you change the bundled quotes, bump `CONTENT_VERSION` in
+`src/db/schema.ts`** before rebuilding — on the next app update, `syncContent`
+merges the new quotes into already-installed devices (additively, by text, so
+progress is preserved). See DECISIONS D21.
 
 ## 4. Build & submit (EAS)
 

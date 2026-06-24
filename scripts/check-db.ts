@@ -81,6 +81,42 @@ console.log('\nUser-data migration (legacy → latest)');
   m.close();
 }
 
+// Content sync merges new quotes additively (by text) so existing ids — and the
+// progress keyed to them — survive. Mirrors content-sync.ts.
+console.log('\nContent sync (additive merge by text)');
+{
+  const m = new DatabaseSync(':memory:');
+  m.exec(`
+    CREATE TABLE quotes (id INTEGER PRIMARY KEY, text TEXT, author TEXT, category TEXT,
+      difficulty INTEGER, letter_count INTEGER, length INTEGER);
+    CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
+  `);
+  m.exec(USER_TABLES_SQL);
+  m.prepare("INSERT INTO quotes (text, difficulty, letter_count, length) VALUES (?, 1, 5, 7)").run('OLD ONE');
+  m.prepare("INSERT INTO quotes (text, difficulty, letter_count, length) VALUES (?, 1, 5, 7)").run('OLD TWO');
+  m.prepare("INSERT INTO meta (key, value) VALUES ('content_version', '1')").run();
+  // Player has solved quote id 1.
+  m.prepare("INSERT INTO progress (quote_id, status, solved_at) VALUES (1, 'solved', 1)").run();
+
+  const incoming = ['OLD ONE', 'NEW A', 'NEW B']; // bundle: 1 existing + 2 new
+  const existing = new Set(
+    (m.prepare('SELECT text FROM quotes').all() as { text: string }[]).map((r) => r.text),
+  );
+  const ins = m.prepare("INSERT INTO quotes (text, difficulty, letter_count, length) VALUES (?, 1, 5, 7)");
+  let added = 0;
+  for (const t of incoming) if (!existing.has(t)) (ins.run(t), added++);
+
+  check('adds only the new quotes', added === 2);
+  check('total quotes after merge is 4', (m.prepare('SELECT COUNT(*) c FROM quotes').get() as { c: number }).c === 4);
+  const solvedText = (
+    m
+      .prepare("SELECT q.text t FROM progress p JOIN quotes q ON q.id = p.quote_id WHERE p.status = 'solved'")
+      .get() as { t: string }
+  ).t;
+  check('solved progress still maps to its original quote', solvedText === 'OLD ONE');
+  m.close();
+}
+
 console.log('\nQueries');
 const anyUnsolved = db.prepare(RANDOM_UNSOLVED).get({ difficulty: null }) as { id: number } | undefined;
 check('random unsolved returns a quote on fresh DB', !!anyUnsolved && typeof anyUnsolved.id === 'number');

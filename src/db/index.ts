@@ -8,6 +8,7 @@ export * from '../types/db';
 export * from './schema';
 export * from './database';
 export * from './migrate';
+export * from './content-sync';
 export * from './quotes';
 export * from './progress';
 export * from './player';

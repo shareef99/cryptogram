@@ -192,6 +192,24 @@ selection gives volume _and_ quality without a popularity column.
 swap for a clean licensed/PD set before public launch (delete the bulk file +
 rebuild). Replaces the earlier quotable bootstrap.
 
+## D21 — Content sync for app updates ✅
+
+**Decision:** The bundled content DB only copies to the device on first launch, so
+shipping more quotes in an app update would never reach existing installs. On
+launch, `syncContent` (db/content-sync.ts) compares the bundled `CONTENT_VERSION`
+(now a single source of truth in db/schema.ts, imported by build-db.ts) against
+the version in the working DB's `meta` table; when newer, it stages a fresh copy
+of the bundled asset and **merges quotes additively, matched by text** — existing
+quotes keep their ids (so progress keyed by quote_id survives) and only new
+quotes are appended. Bump `CONTENT_VERSION` whenever rebuilding the DB.
+**Why:** Players (and us) need new quotes/features to land on already-installed
+devices without a reinstall and without wiping progress. Matching by text avoids
+depending on id stability across builds (build order can shift ids). Quotes
+dropped from a newer build are left in place (harmless) rather than deleted —
+simpler and safe for progress.
+**Caveat:** additive only; it won't prune removed quotes or edit changed ones (a
+typo fix reads as a new quote, orphaning the old). Acceptable for v1.
+
 ---
 
 ## Open items to resolve
