@@ -1,25 +1,29 @@
 /**
- * Home screen: progress summary, coin balance, Continue (resume the most recent
- * in-progress puzzle), and difficulty-aware Play. Data refreshes on focus so it
- * reflects puzzles solved since the last visit.
+ * Home screen — engagement-first layout. Hierarchy is ordered by what brings
+ * players back: streak (loss-aversion) → daily challenge (the habit) → continue
+ * / quick play → stats (progress + achievements). Data refreshes on focus.
  */
 
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CoinIcon } from '@/components/CoinIcon';
-import { StreakPanel } from '@/components/meta/StreakPanel';
+import { DailyCard } from '@/components/home/DailyCard';
+import { StatTile } from '@/components/home/StatTile';
+import { StreakHero } from '@/components/home/StreakHero';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { getDatabase, getInProgressQuote, getQuoteCounts } from '@/db';
+import { getDailyResult, getDatabase, getInProgressQuote, getQuoteCounts, getUnlockedIds } from '@/db';
+import { ACHIEVEMENTS } from '@/game/achievements';
 import { useTheme } from '@/hooks/use-theme';
+import { todayString } from '@/lib/calendar';
 import { usePlayerStore } from '@/store/player-store';
 import { useSettingsStore } from '@/store/settings-store';
 import { useUiStore } from '@/store/ui-store';
-import type { Difficulty, QuoteCounts } from '@/types';
+import type { Difficulty } from '@/types';
 
 const DIFFICULTIES: { value: Difficulty; label: string }[] = [
   { value: 1, label: 'Easy' },
@@ -37,13 +41,15 @@ function startPuzzle(difficulty?: Difficulty) {
 
 export default function HomeScreen() {
   const theme = useTheme();
-  const [counts, setCounts] = useState<QuoteCounts | null>(null);
+  const [solved, setSolved] = useState(0);
   const [continueId, setContinueId] = useState<number | null>(null);
+  const [dailyDone, setDailyDone] = useState(false);
+  const [achUnlocked, setAchUnlocked] = useState(0);
   const coins = usePlayerStore((s) => s.coins);
+  const longestStreak = usePlayerStore((s) => s.longestStreak);
   const settingsHydrated = useSettingsStore((s) => s.hydrated);
 
-  // First launch: once settings are loaded, show the how-to overlay a single
-  // time and remember it. Runs when hydration flips true (async at startup).
+  // First launch: show the how-to overlay once, then remember it.
   useEffect(() => {
     if (!settingsHydrated) return;
     const { onboardingSeen, setOnboardingSeen } = useSettingsStore.getState();
@@ -59,14 +65,18 @@ export default function HomeScreen() {
       (async () => {
         try {
           const db = await getDatabase();
-          const [c, inProgress] = await Promise.all([
+          const today = todayString();
+          const [counts, inProgress, dailyRes, unlocked] = await Promise.all([
             getQuoteCounts(db),
             getInProgressQuote(db),
+            getDailyResult(db, today),
+            getUnlockedIds(db),
           ]);
           if (!active) return;
-          setCounts(c);
+          setSolved(counts.solved);
           setContinueId(inProgress?.id ?? null);
-          // Keep coins/streak fresh in case they changed elsewhere.
+          setDailyDone(dailyRes?.solvedAt != null);
+          setAchUnlocked(unlocked.size);
           usePlayerStore.getState().hydrate();
         } catch {
           /* DB not ready yet — leave defaults */
@@ -78,13 +88,9 @@ export default function HomeScreen() {
     }, []),
   );
 
-  const solved = counts?.solved ?? 0;
-  const total = counts?.total ?? 0;
-  const pct = total > 0 ? (solved / total) * 100 : 0;
-
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.topBar}>
           <Pressable
             // Dev-only: long-press to grant coins + Lucky Reveals for testing.
@@ -109,90 +115,67 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.hero}>
-          <ThemedText type="title" style={styles.title}>
-            Cryptogram
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-            Crack the code. Decode the quote.
-          </ThemedText>
-        </View>
-
-        <View style={styles.bottom}>
-          <StreakPanel />
-
-          <Pressable
-            onPress={() => router.push('/daily')}
-            style={({ pressed }) => [
-              styles.dailyCard,
-              { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.85 : 1 },
-            ]}>
-            <View style={styles.dailyLeft}>
-              <ThemedText style={styles.dailyEmoji}>🗓️</ThemedText>
-              <View>
-                <ThemedText style={styles.dailyTitle}>Daily Challenge</ThemedText>
-                <ThemedText themeColor="textSecondary" type="small">
-                  Today&apos;s puzzle
-                </ThemedText>
-              </View>
-            </View>
-            <ThemedText themeColor="primary" style={styles.dailyChevron}>
-              ›
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.brand}>
+            <ThemedText style={styles.title}>Cryptogram</ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+              Crack the code. Decode the quote.
             </ThemedText>
-          </Pressable>
-
-          <View style={styles.progressRow}>
-            <ThemedText themeColor="textSecondary" type="small">
-              {solved} of {total} solved
-            </ThemedText>
-            <View style={[styles.progressTrack, { backgroundColor: theme.backgroundElement }]}>
-              <View style={[styles.progressFill, { backgroundColor: theme.primary, width: `${pct}%` }]} />
-            </View>
           </View>
+
+          <StreakHero />
+          <DailyCard done={dailyDone} />
 
           {continueId != null && (
             <Pressable
               onPress={() => router.push({ pathname: '/play/[id]', params: { id: String(continueId) } })}
               style={({ pressed }) => [
-                styles.primaryButton,
-                { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1 },
+                styles.continueButton,
+                { borderColor: theme.primary, opacity: pressed ? 0.85 : 1 },
               ]}>
-              <ThemedText themeColor="primaryText" style={styles.primaryLabel}>
-                Continue
+              <ThemedText themeColor="primary" style={styles.continueLabel}>
+                Continue last puzzle
               </ThemedText>
             </Pressable>
           )}
 
-          <Pressable
-            onPress={() => startPuzzle()}
-            style={({ pressed }) => [
-              continueId != null ? styles.secondaryButton : styles.primaryButton,
-              continueId != null
-                ? { borderColor: theme.primary }
-                : { backgroundColor: theme.primary },
-              { opacity: pressed ? 0.85 : 1 },
-            ]}>
-            <ThemedText
-              themeColor={continueId != null ? 'primary' : 'primaryText'}
-              style={styles.primaryLabel}>
-              {continueId != null ? 'New puzzle' : 'Play'}
-            </ThemedText>
-          </Pressable>
-
-          <View style={styles.difficultyRow}>
-            {DIFFICULTIES.map((d) => (
-              <Pressable
-                key={d.value}
-                onPress={() => startPuzzle(d.value)}
-                style={({ pressed }) => [
-                  styles.chip,
-                  { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
-                ]}>
-                <ThemedText type="small">{d.label}</ThemedText>
-              </Pressable>
-            ))}
+          <View style={styles.quickPlay}>
+            <Pressable
+              onPress={() => startPuzzle()}
+              style={({ pressed }) => [
+                styles.playButton,
+                { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1 },
+              ]}>
+              <ThemedText themeColor="primaryText" style={styles.playLabel}>
+                {continueId != null ? 'New puzzle' : 'Play'}
+              </ThemedText>
+            </Pressable>
+            <View style={styles.difficultyRow}>
+              {DIFFICULTIES.map((d) => (
+                <Pressable
+                  key={d.value}
+                  onPress={() => startPuzzle(d.value)}
+                  style={({ pressed }) => [
+                    styles.chip,
+                    { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
+                  ]}>
+                  <ThemedText type="small">{d.label}</ThemedText>
+                </Pressable>
+              ))}
+            </View>
           </View>
-        </View>
+
+          <View style={styles.statsRow}>
+            <StatTile emoji="📚" value={String(solved)} label="Solved" />
+            <StatTile
+              emoji="🏅"
+              value={`${achUnlocked}/${ACHIEVEMENTS.length}`}
+              label="Badges"
+              onPress={() => router.push('/achievements')}
+            />
+            <StatTile emoji="🔥" value={String(longestStreak)} label="Best streak" />
+          </View>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -200,17 +183,13 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center' },
-  safe: {
-    flex: 1,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
+  safe: { flex: 1, width: '100%', maxWidth: MaxContentWidth, paddingHorizontal: Spacing.four },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: Spacing.two,
+    paddingBottom: Spacing.two,
   },
   coinPill: {
     flexDirection: 'row',
@@ -220,6 +199,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one + 2,
     borderRadius: 999,
   },
+  coinText: { fontSize: 16, fontWeight: '700' },
   settingsButton: {
     width: 40,
     height: 40,
@@ -228,43 +208,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   settingsIcon: { fontSize: 20 },
-  coinIcon: { fontSize: 16 },
-  coinText: { fontSize: 16, fontWeight: '700' },
-  hero: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.two },
-  title: { textAlign: 'center' },
+  scroll: { gap: Spacing.three, paddingBottom: Spacing.five },
+  brand: { alignItems: 'center', gap: 2, paddingTop: Spacing.three, paddingBottom: Spacing.one },
+  title: { fontSize: 38, lineHeight: 44, fontWeight: '900', textAlign: 'center' },
   subtitle: { textAlign: 'center' },
-  bottom: { gap: Spacing.three, paddingBottom: Spacing.four },
-  dailyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.four,
-  },
-  dailyLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
-  dailyEmoji: { fontSize: 26 },
-  dailyTitle: { fontSize: 17, fontWeight: '700' },
-  dailyChevron: { fontSize: 28, fontWeight: '700' },
-  progressRow: { gap: Spacing.two, alignItems: 'center' },
-  progressTrack: { width: '100%', height: 8, borderRadius: 4, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 4 },
-  primaryButton: {
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.four,
-    alignItems: 'center',
-  },
-  secondaryButton: {
+  continueButton: {
     paddingVertical: Spacing.three,
     borderRadius: Spacing.four,
     alignItems: 'center',
     borderWidth: 2,
   },
-  primaryLabel: { fontSize: 19, fontWeight: '700' },
+  continueLabel: { fontSize: 17, fontWeight: '700' },
+  quickPlay: { gap: Spacing.three },
+  playButton: { paddingVertical: Spacing.three, borderRadius: Spacing.four, alignItems: 'center' },
+  playLabel: { fontSize: 19, fontWeight: '700' },
   difficultyRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.two },
   chip: {
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
     borderRadius: 999,
   },
+  statsRow: { flexDirection: 'row', gap: Spacing.three, paddingTop: Spacing.one },
 });
