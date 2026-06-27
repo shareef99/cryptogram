@@ -6,11 +6,13 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
 
 import { isPrivacyOptionsRequired, showPrivacyOptions } from '@/ads';
 import { SettingRow } from '@/components/settings/SettingRow';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PRIVACY_URL, TERMS_URL } from '@/constants/links';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getDatabase, resetProgress } from '@/db';
 import { useTheme } from '@/hooks/use-theme';
@@ -152,6 +154,24 @@ export default function SettingsScreen() {
               </Pressable>
             </ThemedView>
           )}
+
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <Pressable onPress={() => WebBrowser.openBrowserAsync(PRIVACY_URL)} style={styles.rowButton}>
+              <ThemedText style={styles.rowLabel}>Privacy Policy</ThemedText>
+              <ThemedText themeColor="primary" style={styles.rowAction}>
+                View
+              </ThemedText>
+            </Pressable>
+
+            <View style={[styles.divider, { backgroundColor: theme.cellBorder }]} />
+
+            <Pressable onPress={() => WebBrowser.openBrowserAsync(TERMS_URL)} style={styles.rowButton}>
+              <ThemedText style={styles.rowLabel}>Terms &amp; Conditions</ThemedText>
+              <ThemedText themeColor="primary" style={styles.rowAction}>
+                View
+              </ThemedText>
+            </Pressable>
+          </ThemedView>
 
           <ThemedView type="backgroundElement" style={styles.card}>
             <Pressable onPress={handleReset} style={styles.rowButton}>
