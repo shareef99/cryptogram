@@ -121,6 +121,26 @@ export default function HomeScreen() {
         <View style={styles.bottom}>
           <StreakPanel />
 
+          <Pressable
+            onPress={() => router.push('/daily')}
+            style={({ pressed }) => [
+              styles.dailyCard,
+              { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.85 : 1 },
+            ]}>
+            <View style={styles.dailyLeft}>
+              <ThemedText style={styles.dailyEmoji}>🗓️</ThemedText>
+              <View>
+                <ThemedText style={styles.dailyTitle}>Daily Challenge</ThemedText>
+                <ThemedText themeColor="textSecondary" type="small">
+                  Today&apos;s puzzle
+                </ThemedText>
+              </View>
+            </View>
+            <ThemedText themeColor="primary" style={styles.dailyChevron}>
+              ›
+            </ThemedText>
+          </Pressable>
+
           <View style={styles.progressRow}>
             <ThemedText themeColor="textSecondary" type="small">
               {solved} of {total} solved
@@ -214,6 +234,18 @@ const styles = StyleSheet.create({
   title: { textAlign: 'center' },
   subtitle: { textAlign: 'center' },
   bottom: { gap: Spacing.three, paddingBottom: Spacing.four },
+  dailyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
+    borderRadius: Spacing.four,
+  },
+  dailyLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  dailyEmoji: { fontSize: 26 },
+  dailyTitle: { fontSize: 17, fontWeight: '700' },
+  dailyChevron: { fontSize: 28, fontWeight: '700' },
   progressRow: { gap: Spacing.two, alignItems: 'center' },
   progressTrack: { width: '100%', height: 8, borderRadius: 4, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4 },
