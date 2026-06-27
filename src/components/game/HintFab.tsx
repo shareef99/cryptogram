@@ -82,5 +82,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     paddingHorizontal: 5,
   },
-  badgeText: { fontSize: 12, fontWeight: '800' },
+  // lineHeight must be set explicitly: ThemedText's default type injects
+  // lineHeight 24, which would vertically off-center a 12px glyph in the badge.
+  badgeText: {
+    fontSize: 12,
+    lineHeight: 12,
+    fontWeight: '800',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
 });
