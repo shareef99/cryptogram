@@ -7,6 +7,7 @@ import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-c
 
 import { initAds } from '@/ads';
 import { HowToPlay } from '@/components/HowToPlay';
+import { ownsRemoveAds } from '@/iap';
 import { useResolvedScheme } from '@/hooks/use-theme';
 import { usePlayerStore } from '@/store/player-store';
 import { useSettingsStore } from '@/store/settings-store';
@@ -19,6 +20,13 @@ export default function RootLayout() {
     usePlayerStore.getState().hydrate().catch(() => {});
     useSettingsStore.getState().hydrate().catch(() => {});
     initAds();
+    // Re-grant a previously purchased "Remove Ads" entitlement (e.g. after a
+    // reinstall, where local settings are fresh). Only ever grants, never revokes.
+    ownsRemoveAds()
+      .then((owned) => {
+        if (owned) useSettingsStore.getState().setAdsRemoved(true);
+      })
+      .catch(() => {});
   }, []);
 
   return (

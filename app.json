@@ -45,7 +45,8 @@
           "iosAppId": "ca-app-pub-3940256099942544~1458002511"
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-iap"
     ],
     "experiments": {
       "typedRoutes": true,

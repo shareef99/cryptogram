@@ -26,22 +26,31 @@ wired in (AdMob app `ca-app-pub-7019308769438850`).
 2. **Test devices:** on the first real-ad load, copy the hashed device id the
    native log prints (`setTestDeviceIds(Arrays.asList("…"))`) into
    `TEST_DEVICE_IDS` for belt-and-suspenders with the dashboard registration.
-3. **Consent + privacy:** add a privacy-policy URL and wire the UMP consent flow
-   (Google User Messaging Platform) before serving ads in the EEA/UK.
+3. **Consent + privacy:** the **UMP consent flow is wired** (`src/ads/consent.ts`,
+   run from `initAds`; gates rewarded/interstitial/banner on `canRequestAds`; a
+   "Privacy choices" Settings row re-opens the form where required). Still to do:
+   set the **privacy-policy URL** in the AdMob consent form + Play listing once
+   `shareefsolutions.in/cryptogram/privacy` is live, and add your hashed device id
+   to `TEST_DEVICE_IDS` to exercise the EEA debug form on a real device.
 4. Any `app.json` native change needs a fresh native build (`expo prebuild` +
    rebuild, or an EAS build) — it is not a JS-only reload.
 
 ## 2. Remove-ads IAP
 
-`src/iap/index.ts` is a documented stub (`IAP_AVAILABLE = __DEV__`). To enable
-real purchases:
+`src/iap/index.ts` now implements the real flow via **expo-iap** (lazy-loaded so
+a build without the native module can't crash; **dev simulates** the purchase).
+It drives `settings.ads_removed`, which gates interstitials + the banner.
+`purchaseRemoveAds` runs the Play Billing flow; `restoreRemoveAds` +
+`ownsRemoveAds` restore the non-consumable (a "Restore purchases" Settings row,
+and an automatic re-grant on launch after a reinstall).
 
-1. Create a non-consumable product `remove_ads` in Play Console / App Store
-   Connect.
-2. Implement `purchaseRemoveAds()` with `expo-iap` (request product → purchase →
-   verify → grant). The entitlement already drives `settings.ads_removed`, which
-   gates interstitials.
-3. Test on an internal track (IAP can't be exercised from a local debug build).
+Still to do before real purchases work:
+
+1. Create a non-consumable product **`remove_ads`** in Play Console.
+2. Build a **native** binary (expo-iap is a native module — needs a rebuild) and
+   install it from an **internal test track** (Play Billing won't transact against
+   a locally-signed APK).
+3. iOS: add the product in App Store Connect when iOS ships.
 
 ## 3. Quote corpus
 

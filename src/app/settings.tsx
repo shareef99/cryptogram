@@ -14,7 +14,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getDatabase, resetProgress } from '@/db';
 import { useTheme } from '@/hooks/use-theme';
-import { IAP_AVAILABLE, purchaseRemoveAds } from '@/iap';
+import { IAP_AVAILABLE, purchaseRemoveAds, restoreRemoveAds } from '@/iap';
 import { usePlayerStore } from '@/store/player-store';
 import { useSettingsStore } from '@/store/settings-store';
 import { useUiStore } from '@/store/ui-store';
@@ -43,6 +43,15 @@ export default function SettingsScreen() {
       Alert.alert('Thanks!', 'Ads have been removed.');
     } else {
       Alert.alert('Unavailable', 'Purchases are not available in this build yet.');
+    }
+  };
+
+  const handleRestore = async () => {
+    if (await restoreRemoveAds()) {
+      await setAdsRemoved(true);
+      Alert.alert('Restored', 'Your “Remove ads” purchase has been restored.');
+    } else {
+      Alert.alert('Nothing to restore', 'No previous “Remove ads” purchase was found.');
     }
   };
 
@@ -119,6 +128,18 @@ export default function SettingsScreen() {
                 {adsRemoved ? 'Removed ✓' : IAP_AVAILABLE ? 'Buy' : 'Soon'}
               </ThemedText>
             </Pressable>
+
+            {!adsRemoved && (
+              <>
+                <View style={[styles.divider, { backgroundColor: theme.cellBorder }]} />
+                <Pressable onPress={handleRestore} style={styles.rowButton}>
+                  <ThemedText style={styles.rowLabel}>Restore purchases</ThemedText>
+                  <ThemedText themeColor="primary" style={styles.rowAction}>
+                    Restore
+                  </ThemedText>
+                </Pressable>
+              </>
+            )}
           </ThemedView>
 
           {privacyOptions && (
