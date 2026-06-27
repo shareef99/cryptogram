@@ -9,7 +9,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PlayBanner } from '@/ads';
 import { GameHeader } from '@/components/game/GameHeader';
@@ -43,6 +43,7 @@ import type { Difficulty } from '@/types';
 export default function PlayScreen() {
   const { id, difficulty } = useLocalSearchParams<{ id: string; difficulty?: string }>();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [author, setAuthor] = useState<string | null>(null);
@@ -122,7 +123,10 @@ export default function PlayScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      {/* Insets from the hook (not the SafeAreaView component) so the header's
+          top padding is stable — the component re-measures its rect during the
+          screen-push transition and would briefly shift the header. */}
+      <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <GameHeader />
 
         <View style={styles.gridArea}>
@@ -184,7 +188,7 @@ export default function PlayScreen() {
         )}
 
         <PlayBanner />
-      </SafeAreaView>
+      </View>
     </ThemedView>
   );
 }
