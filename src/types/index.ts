@@ -8,6 +8,7 @@ export * from './game-state';
 export * from './db';
 export * from './streak';
 export * from './daily';
+export * from './achievement';
 export * from './settings';
 export * from './theme';
 export * from './components';

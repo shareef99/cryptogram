@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 
-import type { Difficulty, Milestone, MonthReward } from '@/types';
+import type { Achievement, Difficulty, Milestone, MonthReward } from '@/types';
 
 export type PuzzleResult = {
   quoteId: number;
@@ -20,6 +20,7 @@ export type PuzzleResult = {
   timeSeconds: number;
   streak: number;
   daily: string | null; // YYYY-MM-DD when this was a daily challenge
+  achievements?: Achievement[]; // newly unlocked this solve
 };
 
 type ResultState = {

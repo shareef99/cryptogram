@@ -65,6 +65,11 @@ CREATE TABLE IF NOT EXISTS daily_result (
 CREATE TABLE IF NOT EXISTS daily_month_reward (
   month TEXT PRIMARY KEY        -- 'YYYY-MM' once its completion reward is granted
 );
+
+CREATE TABLE IF NOT EXISTS achievement (
+  id          TEXT PRIMARY KEY, -- matches a definition in game/achievements.ts
+  unlocked_at INTEGER NOT NULL  -- epoch ms
+);
 `;
 
 /** Ensures the single player profile row exists. */

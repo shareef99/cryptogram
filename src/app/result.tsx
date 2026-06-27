@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { maybeShowInterstitial, showRewarded } from '@/ads';
 import { CoinIcon } from '@/components/CoinIcon';
+import { AchievementUnlockModal } from '@/components/meta/AchievementUnlockModal';
 import { MonthRewardModal } from '@/components/meta/MonthRewardModal';
 import { RewardModal } from '@/components/meta/RewardModal';
 import { ThemedText } from '@/components/themed-text';
@@ -34,6 +35,7 @@ export default function ResultScreen() {
   const [doubling, setDoubling] = useState(false);
   const [milestone, setMilestone] = useState(result?.milestone ?? null);
   const [monthReward, setMonthReward] = useState(result?.monthReward ?? null);
+  const [achievements, setAchievements] = useState(result?.achievements ?? []);
 
   // No result in memory (e.g. deep-linked or reloaded) — bounce home.
   if (!result) return <Redirect href="/" />;
@@ -134,6 +136,7 @@ export default function ResultScreen() {
 
         <RewardModal milestone={milestone} onClose={() => setMilestone(null)} />
         <MonthRewardModal reward={monthReward} onClose={() => setMonthReward(null)} />
+        <AchievementUnlockModal achievements={achievements} onClose={() => setAchievements([])} />
       </SafeAreaView>
     </ThemedView>
   );

@@ -22,6 +22,7 @@ import { ThemedView } from '@/components/themed-view';
 import { COIN_REWARD } from '@/constants/economy';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import {
+  checkAndUnlockAchievements,
   getDailyQuote,
   getDatabase,
   getProgress,
@@ -41,7 +42,7 @@ import { localDateString } from '@/lib/streak';
 import { useGameStore } from '@/store/game-store';
 import { usePlayerStore } from '@/store/player-store';
 import { useResultStore } from '@/store/result-store';
-import type { Difficulty } from '@/types';
+import type { Achievement, Difficulty } from '@/types';
 
 export default function PlayScreen() {
   const { id, difficulty, daily } = useLocalSearchParams<{
@@ -73,6 +74,7 @@ export default function PlayScreen() {
       let milestone = null;
       let monthReward = null;
       let streak = 0;
+      let achievements: Achievement[] = [];
       try {
         const db = await getDatabase();
         const r = await recordLevelCleared(db, localDateString(new Date()), reward);
@@ -84,6 +86,13 @@ export default function PlayScreen() {
           await recordDailyResult(db, daily, quoteId, useGameStore.getState().mistakes, Date.now());
           monthReward = await grantMonthRewardIfComplete(db, daily);
         }
+        achievements = await checkAndUnlockAchievements(db, {
+          mistakes,
+          timeSeconds,
+          difficulty: puzzleDifficulty,
+          currentStreak: r.currentStreak,
+          longestStreak: r.longestStreak,
+        });
         await usePlayerStore.getState().hydrate(); // reflect all coin/hint2 grants
       } catch {
         /* streak update is best-effort */
@@ -100,6 +109,7 @@ export default function PlayScreen() {
         timeSeconds,
         streak,
         daily: daily ?? null,
+        achievements,
       });
       router.replace('/result');
     },

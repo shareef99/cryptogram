@@ -11,6 +11,7 @@ export * from './migrate';
 export * from './content-sync';
 export * from './quotes';
 export * from './daily';
+export * from './achievements';
 export * from './progress';
 export * from './player';
 export * from './activity';
