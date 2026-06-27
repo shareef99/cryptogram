@@ -4,12 +4,11 @@
  * bottom-right corner so they don't consume a layout row. Pick-mode is handled
  * separately by HintPickBar.
  *
- * Reveal's badge shows a *coin cost* (constant — paid from the header coin
- * balance each use), so it carries a coin glyph to read as a price, not a
- * remaining-count. Lucky Reveal's badge is a remaining-count.
+ * Reveal's badge is its *coin cost* (constant — paid from the header coin
+ * balance each use, so it doesn't tick down); Lucky Reveal's badge is the
+ * scarce remaining-count.
  */
 
-import { FontAwesome5 } from '@expo/vector-icons';
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -31,7 +30,6 @@ function HintFabsInner({ hints }: { hints: ReturnType<typeof useHints> }) {
         disabled={!hints.canAffordReveal}
         badge={hints.revealCost}
         badgeColor={theme.coin}
-        badgeIcon={<FontAwesome5 name="coins" size={9} color={theme.primaryText} />}
       />
       <HintFab
         icon="sparkles"

@@ -37,7 +37,9 @@ export function HintFab({
     <Pressable
       onPress={onPress}
       onLongPress={onLongPress}
-      disabled={disabled}
+      // A disabled Pressable swallows long-press too; stay interactive when a
+      // long-press handler is set (onPress is no-op'd by the caller's guards).
+      disabled={disabled && !onLongPress}
       style={({ pressed }) => [
         styles.fab,
         { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : disabled ? 0.4 : 1 },
