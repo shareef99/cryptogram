@@ -49,8 +49,8 @@ column (or a `quote_tags` table) in `build-db.ts` / schema. Do this once.
 
 ## B. Additional engagement / meta ideas
 
-- **B1. Achievements / badges** `[ ]` — "Solve 100", "No-mistake solve", "Sub-60s
-  solve", "7/30-day streak". Cheap to build, very sticky.
+- **B1. Achievements / badges** `[x]` shipped — 10-badge catalog, unlock on solve
+  + modal, achievements screen, home entry. Cheap to build, very sticky.
 - **B2. Streak freeze** `[ ]` — spend coins so a missed day doesn't break the streak.
   Retention **and** a coin sink.
 - **B3. Daily goal** `[ ]` — "Solve 3 today → bonus coins" (separate from the streak).
@@ -60,9 +60,9 @@ column (or a `quote_tags` table) in `build-db.ts` / schema. Do this once.
 
 ## C. Growth / virality
 
-- **C1. Share card (Wordle-style)** `[ ]` — "I solved today's cryptogram — 🔥 day 7,
-  0 mistakes." **Free marketing**; directly attacks the discovery problem. Low
-  effort, high upside. Depends on the deterministic daily (A2).
+- **C1. Share card (Wordle-style)** `[x]` shipped — Share button on the result
+  screen posts a formatted brag (daily/difficulty, flawless, time, streak) + app
+  link via the native share sheet. **Free marketing**; attacks discovery.
 
 ## D. Gameplay modes (reuse the engine + data)
 
@@ -105,8 +105,10 @@ We're mid-closed-test, trying to launch — avoid feature-creep that delays it.
 
 1. ✅ A2 Daily challenge + calendar (retention) — shipped (deterministic
    puzzle/day, calendar with backfill, streak integration, month-completion reward)
-2. C1 Share card (discovery — cheapest growth lever)
-3. A couple of B1 achievements (stickiness)
+2. ✅ C1 Share card (discovery) — shipped
+3. ✅ B1 achievements (stickiness) — shipped (10-badge catalog)
+
+**v1 engagement trio complete.** Home screen redesigned around it.
 
 **Post-launch updates** (each update = an ASO bump + a reason testers/users return):
 
