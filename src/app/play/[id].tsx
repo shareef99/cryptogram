@@ -65,16 +65,19 @@ export default function PlayScreen() {
   const awardCoins = usePlayerStore((s) => s.awardCoins);
 
   usePersistProgress(quoteId, {
-    onSolved: async () => {
+    onSolved: async ({ timeSeconds }) => {
       haptics.success();
       const reward = COIN_REWARD[puzzleDifficulty];
+      const mistakes = useGameStore.getState().mistakes;
       await awardCoins(reward);
       let milestone = null;
       let monthReward = null;
+      let streak = 0;
       try {
         const db = await getDatabase();
         const r = await recordLevelCleared(db, localDateString(new Date()), reward);
         milestone = r.milestone;
+        streak = r.currentStreak;
         // Daily challenge: log the result so the calendar marks it done, then
         // check whether that completed the whole month (one-time bonus).
         if (daily && quoteId != null) {
@@ -93,6 +96,10 @@ export default function PlayScreen() {
         difficulty: puzzleDifficulty,
         milestone,
         monthReward,
+        mistakes,
+        timeSeconds,
+        streak,
+        daily: daily ?? null,
       });
       router.replace('/result');
     },

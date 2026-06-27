@@ -6,3 +6,7 @@
 
 export const PRIVACY_URL = 'https://shareefsolutions.in/cryptogram/privacy';
 export const TERMS_URL = 'https://shareefsolutions.in/cryptogram/terms';
+
+// Link included in share cards. Swap to the Play Store listing once it's live:
+// https://play.google.com/store/apps/details?id=com.shareef.cryptogram
+export const SHARE_URL = 'https://shareefsolutions.in';

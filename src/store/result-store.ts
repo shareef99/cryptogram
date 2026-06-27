@@ -15,6 +15,11 @@ export type PuzzleResult = {
   difficulty: Difficulty;
   milestone: Milestone | null;
   monthReward?: MonthReward | null;
+  // For the share card / achievements.
+  mistakes: number;
+  timeSeconds: number;
+  streak: number;
+  daily: string | null; // YYYY-MM-DD when this was a daily challenge
 };
 
 type ResultState = {
