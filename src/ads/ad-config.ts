@@ -28,7 +28,7 @@ export const BANNER_UNIT_ID = USE_TEST_ADS ? TestIds.ADAPTIVE_BANNER : REAL_BANN
  * `setTestDeviceIds(Arrays.asList("…"))`); `'EMULATOR'` covers simulators.
  * Registering the device's advertising id in the AdMob dashboard does the same.
  */
-export const TEST_DEVICE_IDS: string[] = ['EMULATOR'];
+export const TEST_DEVICE_IDS: string[] = ['EMULATOR', 'C22F95571AFAC40921CCA6E5697A0286'];
 
 /** Interstitials are frequency-capped to stay non-intrusive (see DECISIONS D13). */
 export const INTERSTITIAL_MIN_PUZZLES = 3; // at least this many clears between ads
