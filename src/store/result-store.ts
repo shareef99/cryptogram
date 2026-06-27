@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 
-import type { Difficulty, Milestone } from '@/types';
+import type { Difficulty, Milestone, MonthReward } from '@/types';
 
 export type PuzzleResult = {
   quoteId: number;
@@ -14,6 +14,7 @@ export type PuzzleResult = {
   coinsEarned: number;
   difficulty: Difficulty;
   milestone: Milestone | null;
+  monthReward?: MonthReward | null;
 };
 
 type ResultState = {

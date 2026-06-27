@@ -11,6 +11,13 @@ export type DailyResult = {
   solvedAt: number | null;
 };
 
+/** Reward for completing every daily in a calendar month (granted once). */
+export type MonthReward = {
+  month: string; // YYYY-MM
+  coins: number;
+  hint2: number;
+};
+
 /** One cell in the month calendar grid (blank padding cells have day = 0). */
 export type CalendarCell = {
   /** Local YYYY-MM-DD, or null for leading blank padding cells. */

@@ -27,6 +27,7 @@ import {
   getProgress,
   getQuoteById,
   getRandomUnsolvedQuote,
+  grantMonthRewardIfComplete,
   parseGuesses,
   recordDailyResult,
   recordLevelCleared,
@@ -69,15 +70,18 @@ export default function PlayScreen() {
       const reward = COIN_REWARD[puzzleDifficulty];
       await awardCoins(reward);
       let milestone = null;
+      let monthReward = null;
       try {
         const db = await getDatabase();
         const r = await recordLevelCleared(db, localDateString(new Date()), reward);
-        await usePlayerStore.getState().hydrate(); // sync streak + milestone grants
         milestone = r.milestone;
-        // Daily challenge: log the result for this date so the calendar marks it done.
+        // Daily challenge: log the result so the calendar marks it done, then
+        // check whether that completed the whole month (one-time bonus).
         if (daily && quoteId != null) {
           await recordDailyResult(db, daily, quoteId, useGameStore.getState().mistakes, Date.now());
+          monthReward = await grantMonthRewardIfComplete(db, daily);
         }
+        await usePlayerStore.getState().hydrate(); // reflect all coin/hint2 grants
       } catch {
         /* streak update is best-effort */
       }
@@ -88,6 +92,7 @@ export default function PlayScreen() {
         coinsEarned: reward,
         difficulty: puzzleDifficulty,
         milestone,
+        monthReward,
       });
       router.replace('/result');
     },

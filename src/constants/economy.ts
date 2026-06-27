@@ -28,3 +28,6 @@ export const STREAK_MILESTONES: { day: number; coins: number; hint2: number }[] 
   { day: 14, coins: 150, hint2: 3 },
   { day: 30, coins: 400, hint2: 5 },
 ];
+
+/** One-time reward for completing every daily challenge in a calendar month. */
+export const DAILY_MONTH_REWARD = { coins: 250, hint2: 3 };

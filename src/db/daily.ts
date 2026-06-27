@@ -10,8 +10,12 @@
 
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { DAILY_MONTH_REWARD } from '@/constants/economy';
 import { Rng } from '@/game/rng';
-import type { DailyResult, QuoteRow } from '@/types';
+import { daysInMonth } from '@/lib/calendar';
+import type { DailyResult, MonthReward, QuoteRow } from '@/types';
+
+import { addCoins, addHint2 } from './player';
 
 /** Stable selection pool: the lowest-id N quotes (well under the bundled corpus). */
 const DAILY_POOL = 10000;
@@ -84,4 +88,29 @@ export async function isMonthRewardGranted(db: SQLiteDatabase, month: string): P
 /** Mark a month's completion reward as granted (idempotent). */
 export async function markMonthRewardGranted(db: SQLiteDatabase, month: string): Promise<void> {
   await db.runAsync('INSERT OR IGNORE INTO daily_month_reward (month) VALUES (?)', month);
+}
+
+/**
+ * If every day of `date`'s month is now solved (and the reward hasn't been
+ * granted), grant the month-completion bonus once and return it; else null.
+ * For the current month this can only succeed once its last day is played.
+ */
+export async function grantMonthRewardIfComplete(
+  db: SQLiteDatabase,
+  date: string,
+): Promise<MonthReward | null> {
+  const year = Number(date.slice(0, 4));
+  const month1 = Number(date.slice(5, 7));
+  const month = date.slice(0, 7); // YYYY-MM
+  const total = daysInMonth(year, month1);
+
+  const results = await getDailyResultsInRange(db, `${month}-01`, `${month}-${String(total).padStart(2, '0')}`);
+  const doneCount = results.filter((r) => r.solvedAt != null).length;
+  if (doneCount < total) return null;
+  if (await isMonthRewardGranted(db, month)) return null;
+
+  await markMonthRewardGranted(db, month);
+  await addCoins(db, DAILY_MONTH_REWARD.coins);
+  await addHint2(db, DAILY_MONTH_REWARD.hint2);
+  return { month, coins: DAILY_MONTH_REWARD.coins, hint2: DAILY_MONTH_REWARD.hint2 };
 }
