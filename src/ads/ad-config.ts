@@ -16,9 +16,11 @@ export const USE_TEST_ADS = __DEV__;
 // iOS ships its own app + units in AdMob before an iOS release — see RELEASE.md.
 const REAL_REWARDED = 'ca-app-pub-7019308769438850/1945461465';
 const REAL_INTERSTITIAL = 'ca-app-pub-7019308769438850/4896882262';
+const REAL_BANNER = 'ca-app-pub-7019308769438850/5367639646';
 
 export const REWARDED_UNIT_ID = USE_TEST_ADS ? TestIds.REWARDED : REAL_REWARDED;
 export const INTERSTITIAL_UNIT_ID = USE_TEST_ADS ? TestIds.INTERSTITIAL : REAL_INTERSTITIAL;
+export const BANNER_UNIT_ID = USE_TEST_ADS ? TestIds.ADAPTIVE_BANNER : REAL_BANNER;
 
 /**
  * Devices that receive test-mode ads even when the real units are live. Add the

@@ -117,13 +117,18 @@ gives Hint 1 a price.
 special.
 **Detail:** Streak math compares local `YYYY-MM-DD` strings to avoid timezone/DST bugs.
 
-## D13 — Ads philosophy: non-intrusive, opt-in-first ✅
+## D13 — Ads philosophy: non-intrusive, opt-in-first ✅ (banner added 🔄)
 
 **Decision:** No forced mid-gameplay ads. Rewarded ads are opt-in (hints + "double your
 coins"). Interstitials are frequency-capped (≤1 per N puzzles + min time gap), shown only on
-win→next, never mid-puzzle. No banner on the puzzle screen.
+win→next, never mid-puzzle.
 **Why:** The whole motivation for building this is that the reference game shows forced
 interstitials between every stage. We monetize without that.
+**Revision (🔄):** A single **anchored adaptive banner** now sits below the keyboard on the
+puzzle screen (`src/ads/PlayBanner.tsx`). Banners are passive (no interruption, no covering the
+grid), which keeps the "non-intrusive" promise while adding steady fill. It is hidden when ads
+are removed via IAP and self-collapses on no-fill. Trade-off accepted: more ad surface raises
+the priority of the UMP consent flow (RELEASE.md §1) before an EEA launch.
 
 ## D14 — "Double your reward" ad & the 5-second-skip question ✅
 

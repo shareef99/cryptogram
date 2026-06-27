@@ -11,6 +11,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PlayBanner } from '@/ads';
 import { GameHeader } from '@/components/game/GameHeader';
 import { HintFabs } from '@/components/game/HintFabs';
 import { HintPickBar } from '@/components/game/HintPickBar';
@@ -181,6 +182,8 @@ export default function PlayScreen() {
             )}
           </View>
         )}
+
+        <PlayBanner />
       </SafeAreaView>
     </ThemedView>
   );
