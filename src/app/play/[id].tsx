@@ -22,11 +22,13 @@ import { ThemedView } from '@/components/themed-view';
 import { COIN_REWARD } from '@/constants/economy';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import {
+  getDailyQuote,
   getDatabase,
   getProgress,
   getQuoteById,
   getRandomUnsolvedQuote,
   parseGuesses,
+  recordDailyResult,
   recordLevelCleared,
   toQuoteInput,
 } from '@/db';
@@ -41,7 +43,11 @@ import { useResultStore } from '@/store/result-store';
 import type { Difficulty } from '@/types';
 
 export default function PlayScreen() {
-  const { id, difficulty } = useLocalSearchParams<{ id: string; difficulty?: string }>();
+  const { id, difficulty, daily } = useLocalSearchParams<{
+    id: string;
+    difficulty?: string;
+    daily?: string; // YYYY-MM-DD when playing the daily challenge for that date
+  }>();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
@@ -68,6 +74,10 @@ export default function PlayScreen() {
         const r = await recordLevelCleared(db, localDateString(new Date()), reward);
         await usePlayerStore.getState().hydrate(); // sync streak + milestone grants
         milestone = r.milestone;
+        // Daily challenge: log the result for this date so the calendar marks it done.
+        if (daily && quoteId != null) {
+          await recordDailyResult(db, daily, quoteId, useGameStore.getState().mistakes, Date.now());
+        }
       } catch {
         /* streak update is best-effort */
       }
@@ -90,17 +100,20 @@ export default function PlayScreen() {
       try {
         const db = await getDatabase();
         const diff = difficulty ? (Number(difficulty) as Difficulty) : undefined;
-        const row =
-          which && which !== 'new'
+        // Daily mode resolves the deterministic puzzle for its date; otherwise a
+        // specific quote (resume/restart) or a fresh random unsolved one.
+        const row = daily
+          ? await getDailyQuote(db, daily)
+          : which && which !== 'new'
             ? await getQuoteById(db, Number(which))
             : await getRandomUnsolvedQuote(db, diff);
         if (!row) {
           setError('No more puzzles — you solved them all!');
           return;
         }
-        // A fresh restart (e.g. after losing) ignores saved guesses so the puzzle
-        // begins from its deterministic starting foothold again.
-        const progress = opts?.fresh ? null : await getProgress(db, row.id);
+        // A fresh restart (or the daily, which is always replayed from scratch)
+        // ignores saved guesses so the puzzle begins from its foothold again.
+        const progress = daily || opts?.fresh ? null : await getProgress(db, row.id);
         setAuthor(row.author);
         setQuoteId(row.id);
         setPuzzleDifficulty(row.difficulty as Difficulty);
@@ -113,7 +126,7 @@ export default function PlayScreen() {
         setLoading(false);
       }
     },
-    [load, difficulty],
+    [load, difficulty, daily],
   );
 
   useEffect(() => {
