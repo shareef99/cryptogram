@@ -35,7 +35,7 @@ column (or a `quote_tags` table) in `build-db.ts` / schema. Do this once.
 - Reward tiers should feel meaningful: coins **+** a scarce Hint 2 **+** a badge.
 - **Depends on:** tags preservation.
 
-### A2. Daily quote + calendar `[ ]`
+### A2. Daily quote + calendar `[x]` shipped
 
 - One puzzle **per day**, **same for everyone** (deterministic from the date via the
   existing seeded RNG → also enables the Share card, C1).
@@ -103,7 +103,8 @@ We're mid-closed-test, trying to launch — avoid feature-creep that delays it.
 
 **v1 (small, high-leverage):**
 
-1. A2 Daily challenge + calendar (retention)
+1. ✅ A2 Daily challenge + calendar (retention) — shipped (deterministic
+   puzzle/day, calendar with backfill, streak integration, month-completion reward)
 2. C1 Share card (discovery — cheapest growth lever)
 3. A couple of B1 achievements (stickiness)
 
