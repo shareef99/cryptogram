@@ -3,9 +3,11 @@
  */
 
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { isPrivacyOptionsRequired, showPrivacyOptions } from '@/ads';
 import { SettingRow } from '@/components/settings/SettingRow';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -32,6 +34,8 @@ export default function SettingsScreen() {
   const setSoundEnabled = useSettingsStore((s) => s.setSoundEnabled);
   const adsRemoved = useSettingsStore((s) => s.adsRemoved);
   const setAdsRemoved = useSettingsStore((s) => s.setAdsRemoved);
+  // UMP requires an always-available way to re-open consent where it applies.
+  const [privacyOptions] = useState(() => isPrivacyOptionsRequired());
 
   const handleRemoveAds = async () => {
     if (await purchaseRemoveAds()) {
@@ -116,6 +120,17 @@ export default function SettingsScreen() {
               </ThemedText>
             </Pressable>
           </ThemedView>
+
+          {privacyOptions && (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <Pressable onPress={() => showPrivacyOptions()} style={styles.rowButton}>
+                <ThemedText style={styles.rowLabel}>Privacy choices</ThemedText>
+                <ThemedText themeColor="primary" style={styles.rowAction}>
+                  Manage
+                </ThemedText>
+              </Pressable>
+            </ThemedView>
+          )}
 
           <ThemedView type="backgroundElement" style={styles.card}>
             <Pressable onPress={handleReset} style={styles.rowButton}>

@@ -14,6 +14,7 @@ import { Spacing } from '@/constants/theme';
 import { useSettingsStore } from '@/store/settings-store';
 
 import { BANNER_UNIT_ID } from './ad-config';
+import { canRequestAds } from './consent';
 
 // Anchored adaptive banners are ~50dp tall on phones; reserve a touch more so a
 // filled ad sits centered in a stable slot (no layout shift on load/fill).
@@ -21,7 +22,8 @@ const BANNER_SLOT_HEIGHT = 60;
 
 export function PlayBanner() {
   const adsRemoved = useSettingsStore((s) => s.adsRemoved);
-  if (adsRemoved) return null;
+  // No ads until UMP consent permits (and never once ads are removed via IAP).
+  if (adsRemoved || !canRequestAds()) return null;
 
   return (
     <View style={styles.slot}>
