@@ -54,6 +54,17 @@ CREATE TABLE IF NOT EXISTS daily_activity (
   levels_cleared INTEGER NOT NULL DEFAULT 0,
   coins_earned   INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS daily_result (
+  date      TEXT PRIMARY KEY,   -- local YYYY-MM-DD of the daily challenge
+  quote_id  INTEGER NOT NULL,   -- the deterministic quote for that date
+  mistakes  INTEGER NOT NULL DEFAULT 0,
+  solved_at INTEGER             -- epoch ms when solved (null = started, not solved)
+);
+
+CREATE TABLE IF NOT EXISTS daily_month_reward (
+  month TEXT PRIMARY KEY        -- 'YYYY-MM' once its completion reward is granted
+);
 `;
 
 /** Ensures the single player profile row exists. */

@@ -12,6 +12,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { SEED_PLAYER_SQL, USER_DATA_MIGRATIONS, USER_TABLES_SQL } from '../src/db/schema';
+import { Rng } from '../src/game/rng';
+import { buildMonthGrid, elapsedDaysOfMonth } from '../src/lib/calendar';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -115,6 +117,39 @@ console.log('\nContent sync (additive merge by text)');
   ).t;
   check('solved progress still maps to its original quote', solvedText === 'OLD ONE');
   m.close();
+}
+
+console.log('\nDaily challenge');
+{
+  // Deterministic puzzle-of-the-day over the real quotes table (mirrors db/daily.ts).
+  const total = (db.prepare('SELECT COUNT(*) c FROM quotes').get() as { c: number }).c;
+  const pool = Math.min(total, 10000);
+  const pick = (date: string) => {
+    const offset = new Rng(`daily-${date}`).int(pool);
+    return (db.prepare('SELECT id FROM quotes ORDER BY id LIMIT 1 OFFSET ?').get(offset) as { id: number }).id;
+  };
+  const a1 = pick('2026-06-27');
+  const a2 = pick('2026-06-27');
+  const b = pick('2026-06-28');
+  check('daily selection deterministic for a date', a1 === a2);
+  check('different dates pick different quotes', a1 !== b);
+  check('daily quote id exists', typeof a1 === 'number' && a1 > 0);
+
+  // daily_result round-trip (table created via USER_TABLES_SQL above).
+  db.prepare("INSERT INTO daily_result (date, quote_id, mistakes, solved_at) VALUES ('2026-06-20', 42, 1, 123)").run();
+  const r = db.prepare("SELECT * FROM daily_result WHERE date = '2026-06-20'").get() as { quote_id: number; mistakes: number };
+  check('daily_result round-trips', !!r && r.quote_id === 42 && r.mistakes === 1);
+
+  // Calendar grid for June 2026 (30 days), today = the 27th.
+  const grid = buildMonthGrid(2026, 6, '2026-06-27', new Set(['2026-06-20']));
+  const dayCells = grid.filter((c) => c.date);
+  const firstWeekday = new Date(2026, 5, 1).getDay();
+  check('grid has 30 day cells for June', dayCells.length === 30);
+  check('leading blanks align the 1st', grid.findIndex((c) => c.date !== null) === firstWeekday);
+  check('today flagged', dayCells.find((c) => c.day === 27)?.isToday === true);
+  check('future day flagged', dayCells.find((c) => c.day === 28)?.isFuture === true);
+  check('solved day marked done', dayCells.find((c) => c.day === 20)?.done === true);
+  check('elapsedDaysOfMonth stops at today', elapsedDaysOfMonth(2026, 6, '2026-06-27').length === 27);
 }
 
 console.log('\nQueries');
