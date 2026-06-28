@@ -55,6 +55,8 @@ type GameState = {
   revealRandom: () => number | null;
   enterPickMode: () => void;
   exitPickMode: () => void;
+  /** After a loss: keep the filled board, refill lives, and resume (ad continue). */
+  revive: () => void;
   /** Dev-only: instantly solve the current puzzle. */
   __devSolve: () => void;
   reset: () => void;
@@ -104,9 +106,12 @@ function buildStartingGiven(
   const ranked = [...puzzle.codes].sort(
     (a, b) => cellsByCode[b].length - cellsByCode[a].length || a - b,
   );
+  // Reveal ONE (deterministically-chosen) instance per starting letter — a
+  // foothold, not a freebie. Seeded by puzzle id so a retry starts identically.
+  const rng = new Rng(`given-${puzzle.id}`);
   const given: CellGuesses = {};
   for (const code of ranked.slice(0, count)) {
-    for (const id of cellsByCode[code]) given[id] = puzzle.codeToSolution[code];
+    given[rng.pick(cellsByCode[code])] = puzzle.codeToSolution[code];
   }
   return given;
 }
@@ -244,6 +249,19 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (get().status === 'playing') set({ hintMode: 'pick' });
   },
   exitPickMode: () => set({ hintMode: 'idle' }),
+
+  revive: () => {
+    const { puzzle, cellGuesses, status } = get();
+    if (!puzzle || status !== 'lost') return;
+    // Keep all solved cells; refill lives and continue from the next blank.
+    set({
+      mistakes: 0,
+      wrongCellId: null,
+      status: 'playing',
+      selectedCellId: nextUnsolvedCellId(puzzle, cellGuesses, -1),
+      hintMode: 'idle',
+    });
+  },
 
   __devSolve: () => {
     const { puzzle } = get();

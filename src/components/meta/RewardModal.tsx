@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
   },
-  flame: { fontSize: 56 },
+  flame: { fontSize: 56, lineHeight: 64 },
   title: { fontSize: 26, fontWeight: '800' },
   subtitle: { textAlign: 'center' },
   rewards: { flexDirection: 'row', gap: Spacing.five, marginVertical: Spacing.three },

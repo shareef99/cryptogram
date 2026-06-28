@@ -24,6 +24,19 @@ export function addDays(dateStr: string, n: number): string {
 }
 
 /**
+ * Whether a streak is exactly one missed day from resetting and can still be
+ * saved (a "freeze"): there's a live streak and the player was last active the
+ * day before yesterday, i.e. they missed only yesterday.
+ */
+export function streakIsSavable(
+  currentStreak: number,
+  lastActiveDate: string | null,
+  today: string,
+): boolean {
+  return currentStreak >= 1 && lastActiveDate === addDays(today, -2);
+}
+
+/**
  * Given the last active date, current streak, and today's date, compute the new
  * streak. Consecutive days increment; a gap resets to 1; same-day is a no-op.
  */

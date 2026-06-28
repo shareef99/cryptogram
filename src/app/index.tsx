@@ -1,49 +1,94 @@
 /**
- * Home screen: progress summary, coin balance, Continue (resume the most recent
- * in-progress puzzle), and difficulty-aware Play. Data refreshes on focus so it
- * reflects puzzles solved since the last visit.
+ * Home screen — engagement-first layout. Hierarchy is ordered by what brings
+ * players back: streak (loss-aversion) → daily challenge (the habit) → continue
+ * / quick play → stats (progress + achievements). Data refreshes on focus.
  */
 
+import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { REWARDED_COIN_BONUS_UNIT_ID, REWARDED_STREAK_FREEZE_UNIT_ID, showRewarded } from '@/ads';
 import { CoinIcon } from '@/components/CoinIcon';
-import { StreakPanel } from '@/components/meta/StreakPanel';
+import { DailyCard } from '@/components/home/DailyCard';
+import { StatTile } from '@/components/home/StatTile';
+import { StreakHero } from '@/components/home/StreakHero';
+import { StreakFreezeModal } from '@/components/meta/StreakFreezeModal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { getDatabase, getInProgressQuote, getQuoteCounts } from '@/db';
+import {
+  freezeStreak,
+  getDailyResult,
+  getDatabase,
+  getInProgressQuote,
+  getQuoteCounts,
+  getUnlockedIds,
+} from '@/db';
+import { COIN_AD_BONUS } from '@/constants/economy';
+import { ACHIEVEMENTS } from '@/game/achievements';
 import { useTheme } from '@/hooks/use-theme';
+import { todayString } from '@/lib/calendar';
+import { streakIsSavable } from '@/lib/streak';
 import { usePlayerStore } from '@/store/player-store';
 import { useSettingsStore } from '@/store/settings-store';
 import { useUiStore } from '@/store/ui-store';
-import type { Difficulty, QuoteCounts } from '@/types';
 
-const DIFFICULTIES: { value: Difficulty; label: string }[] = [
-  { value: 1, label: 'Easy' },
-  { value: 2, label: 'Medium' },
-  { value: 3, label: 'Hard' },
-  { value: 4, label: 'Long' },
-];
-
-function startPuzzle(difficulty?: Difficulty) {
-  router.push({
-    pathname: '/play/[id]',
-    params: { id: 'new', ...(difficulty ? { difficulty: String(difficulty) } : {}) },
-  });
+// Difficulty is no longer player-selected — Play auto-rotates easy/medium/hard
+// (see getSequencedUnsolvedQuote).
+function startPuzzle() {
+  router.push({ pathname: '/play/[id]', params: { id: 'new' } });
 }
 
 export default function HomeScreen() {
   const theme = useTheme();
-  const [counts, setCounts] = useState<QuoteCounts | null>(null);
+  const [solved, setSolved] = useState(0);
   const [continueId, setContinueId] = useState<number | null>(null);
+  const [dailyDone, setDailyDone] = useState(false);
+  const [achUnlocked, setAchUnlocked] = useState(0);
+  const [coinAdLoading, setCoinAdLoading] = useState(false);
+  const [freezePrompt, setFreezePrompt] = useState(false);
+  const [freezeLoading, setFreezeLoading] = useState(false);
   const coins = usePlayerStore((s) => s.coins);
+  const currentStreak = usePlayerStore((s) => s.currentStreak);
+  const longestStreak = usePlayerStore((s) => s.longestStreak);
+  const lastActiveDate = usePlayerStore((s) => s.lastActiveDate);
   const settingsHydrated = useSettingsStore((s) => s.hydrated);
+  const freezeCheckedRef = useRef(false);
 
-  // First launch: once settings are loaded, show the how-to overlay a single
-  // time and remember it. Runs when hydration flips true (async at startup).
+  // Rewarded "free coins": watch an ad → grant a small coin bonus.
+  const handleFreeCoins = useCallback(async () => {
+    setCoinAdLoading(true);
+    const earned = await showRewarded(REWARDED_COIN_BONUS_UNIT_ID);
+    setCoinAdLoading(false);
+    if (earned) await usePlayerStore.getState().awardCoins(COIN_AD_BONUS);
+  }, []);
+
+  // Offer a streak freeze once per session when the streak is one missed day
+  // from resetting (fires after the player row hydrates).
+  useEffect(() => {
+    if (freezeCheckedRef.current) return;
+    if (streakIsSavable(currentStreak, lastActiveDate, todayString())) {
+      freezeCheckedRef.current = true;
+      setFreezePrompt(true);
+    }
+  }, [currentStreak, lastActiveDate]);
+
+  const handleFreezeStreak = useCallback(async () => {
+    setFreezeLoading(true);
+    const earned = await showRewarded(REWARDED_STREAK_FREEZE_UNIT_ID);
+    setFreezeLoading(false);
+    if (earned) {
+      const db = await getDatabase();
+      await freezeStreak(db);
+      await usePlayerStore.getState().hydrate();
+    }
+    setFreezePrompt(false);
+  }, []);
+
+  // First launch: show the how-to overlay once, then remember it.
   useEffect(() => {
     if (!settingsHydrated) return;
     const { onboardingSeen, setOnboardingSeen } = useSettingsStore.getState();
@@ -59,14 +104,18 @@ export default function HomeScreen() {
       (async () => {
         try {
           const db = await getDatabase();
-          const [c, inProgress] = await Promise.all([
+          const today = todayString();
+          const [counts, inProgress, dailyRes, unlocked] = await Promise.all([
             getQuoteCounts(db),
             getInProgressQuote(db),
+            getDailyResult(db, today),
+            getUnlockedIds(db),
           ]);
           if (!active) return;
-          setCounts(c);
+          setSolved(counts.solved);
           setContinueId(inProgress?.id ?? null);
-          // Keep coins/streak fresh in case they changed elsewhere.
+          setDailyDone(dailyRes?.solvedAt != null);
+          setAchUnlocked(unlocked.size);
           usePlayerStore.getState().hydrate();
         } catch {
           /* DB not ready yet — leave defaults */
@@ -78,28 +127,37 @@ export default function HomeScreen() {
     }, []),
   );
 
-  const solved = counts?.solved ?? 0;
-  const total = counts?.total ?? 0;
-  const pct = total > 0 ? (solved / total) * 100 : 0;
-
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.topBar}>
-          <Pressable
-            // Dev-only: long-press to grant coins + Lucky Reveals for testing.
-            onLongPress={
-              __DEV__
-                ? () => {
-                    usePlayerStore.getState().awardCoins(100);
-                    usePlayerStore.getState().grantHint2(3);
-                  }
-                : undefined
-            }
-            style={[styles.coinPill, { backgroundColor: theme.backgroundElement }]}>
-            <CoinIcon size={15} />
-            <ThemedText style={styles.coinText}>{coins}</ThemedText>
-          </Pressable>
+          <View style={styles.coinGroup}>
+            <Pressable
+              // Dev-only: long-press to grant coins + Lucky Reveals for testing.
+              onLongPress={
+                __DEV__
+                  ? () => {
+                      usePlayerStore.getState().awardCoins(100);
+                      usePlayerStore.getState().grantHint2(3);
+                    }
+                  : undefined
+              }
+              style={[styles.coinPill, { backgroundColor: theme.backgroundElement }]}>
+              <CoinIcon size={15} />
+              <ThemedText style={styles.coinText}>{coins}</ThemedText>
+            </Pressable>
+
+            <Pressable
+              onPress={handleFreeCoins}
+              disabled={coinAdLoading}
+              style={({ pressed }) => [
+                styles.freeCoins,
+                { backgroundColor: theme.coin, opacity: pressed || coinAdLoading ? 0.6 : 1 },
+              ]}>
+              <Ionicons name="play" size={12} color="#1a1205" />
+              <ThemedText style={styles.freeCoinsText}>Free coins</ThemedText>
+            </Pressable>
+          </View>
 
           <Pressable
             onPress={() => router.push('/settings')}
@@ -109,70 +167,53 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.hero}>
-          <ThemedText type="title" style={styles.title}>
-            Cryptogram
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-            Crack the code. Decode the quote.
-          </ThemedText>
-        </View>
-
-        <View style={styles.bottom}>
-          <StreakPanel />
-
-          <View style={styles.progressRow}>
-            <ThemedText themeColor="textSecondary" type="small">
-              {solved} of {total} solved
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.brand}>
+            <ThemedText style={styles.title}>Cryptogram</ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+              Crack the code. Decode the quote.
             </ThemedText>
-            <View style={[styles.progressTrack, { backgroundColor: theme.backgroundElement }]}>
-              <View style={[styles.progressFill, { backgroundColor: theme.primary, width: `${pct}%` }]} />
-            </View>
           </View>
 
-          {continueId != null && (
-            <Pressable
-              onPress={() => router.push({ pathname: '/play/[id]', params: { id: String(continueId) } })}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1 },
-              ]}>
-              <ThemedText themeColor="primaryText" style={styles.primaryLabel}>
-                Continue
-              </ThemedText>
-            </Pressable>
-          )}
+          <StreakHero />
+          <DailyCard done={dailyDone} />
 
+          {/* An unfinished puzzle must be completed (or lost) before a new one —
+              so we show only Continue while one is in progress, never "New puzzle". */}
           <Pressable
-            onPress={() => startPuzzle()}
-            style={({ pressed }) => [
-              continueId != null ? styles.secondaryButton : styles.primaryButton,
+            onPress={() =>
               continueId != null
-                ? { borderColor: theme.primary }
-                : { backgroundColor: theme.primary },
-              { opacity: pressed ? 0.85 : 1 },
+                ? router.push({ pathname: '/play/[id]', params: { id: String(continueId) } })
+                : startPuzzle()
+            }
+            style={({ pressed }) => [
+              styles.playButton,
+              { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1 },
             ]}>
-            <ThemedText
-              themeColor={continueId != null ? 'primary' : 'primaryText'}
-              style={styles.primaryLabel}>
-              {continueId != null ? 'New puzzle' : 'Play'}
+            <ThemedText themeColor="primaryText" style={styles.playLabel}>
+              {continueId != null ? 'Continue puzzle' : 'Play'}
             </ThemedText>
           </Pressable>
 
-          <View style={styles.difficultyRow}>
-            {DIFFICULTIES.map((d) => (
-              <Pressable
-                key={d.value}
-                onPress={() => startPuzzle(d.value)}
-                style={({ pressed }) => [
-                  styles.chip,
-                  { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
-                ]}>
-                <ThemedText type="small">{d.label}</ThemedText>
-              </Pressable>
-            ))}
+          <View style={styles.statsRow}>
+            <StatTile emoji="📚" value={String(solved)} label="Solved" />
+            <StatTile
+              emoji="🏅"
+              value={`${achUnlocked}/${ACHIEVEMENTS.length}`}
+              label="Badges"
+              onPress={() => router.push('/achievements')}
+            />
+            <StatTile emoji="🔥" value={String(longestStreak)} label="Best streak" />
           </View>
-        </View>
+        </ScrollView>
+
+        <StreakFreezeModal
+          visible={freezePrompt}
+          streak={currentStreak}
+          loading={freezeLoading}
+          onSave={handleFreezeStreak}
+          onDismiss={() => setFreezePrompt(false)}
+        />
       </SafeAreaView>
     </ThemedView>
   );
@@ -180,18 +221,15 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center' },
-  safe: {
-    flex: 1,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
+  safe: { flex: 1, width: '100%', maxWidth: MaxContentWidth, paddingHorizontal: Spacing.four },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: Spacing.two,
+    paddingBottom: Spacing.two,
   },
+  coinGroup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   coinPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -200,6 +238,16 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one + 2,
     borderRadius: 999,
   },
+  coinText: { fontSize: 16, fontWeight: '700' },
+  freeCoins: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one + 2,
+    borderRadius: 999,
+  },
+  freeCoinsText: { fontSize: 13, fontWeight: '800', color: '#1a1205' },
   settingsButton: {
     width: 40,
     height: 40,
@@ -208,31 +256,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   settingsIcon: { fontSize: 20 },
-  coinIcon: { fontSize: 16 },
-  coinText: { fontSize: 16, fontWeight: '700' },
-  hero: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.two },
-  title: { textAlign: 'center' },
+  scroll: { gap: Spacing.three, paddingBottom: Spacing.five },
+  brand: { alignItems: 'center', gap: 2, paddingTop: Spacing.three, paddingBottom: Spacing.one },
+  title: { fontSize: 38, lineHeight: 44, fontWeight: '900', textAlign: 'center' },
   subtitle: { textAlign: 'center' },
-  bottom: { gap: Spacing.three, paddingBottom: Spacing.four },
-  progressRow: { gap: Spacing.two, alignItems: 'center' },
-  progressTrack: { width: '100%', height: 8, borderRadius: 4, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 4 },
-  primaryButton: {
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.four,
-    alignItems: 'center',
-  },
-  secondaryButton: {
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.four,
-    alignItems: 'center',
-    borderWidth: 2,
-  },
-  primaryLabel: { fontSize: 19, fontWeight: '700' },
-  difficultyRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.two },
-  chip: {
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: 999,
-  },
+  playButton: { paddingVertical: Spacing.three, borderRadius: Spacing.four, alignItems: 'center' },
+  playLabel: { fontSize: 19, fontWeight: '700' },
+  statsRow: { flexDirection: 'row', gap: Spacing.three, paddingTop: Spacing.one },
 });

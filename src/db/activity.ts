@@ -7,10 +7,21 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { STREAK_MILESTONES } from '@/constants/economy';
-import { computeStreak } from '@/lib/streak';
+import { addDays, computeStreak, localDateString } from '@/lib/streak';
 import type { LevelClearedResult, Milestone } from '@/types';
 
 import { addCoins, addHint2 } from './player';
+
+// streakIsSavable lives in lib/streak (pure). freezeStreak does the DB write.
+
+/**
+ * "Freeze" the streak by bridging the one missed day: set last_active_date to
+ * yesterday so a solve today continues the streak instead of resetting it.
+ */
+export async function freezeStreak(db: SQLiteDatabase): Promise<void> {
+  const yesterday = addDays(localDateString(new Date()), -1);
+  await db.runAsync('UPDATE player SET last_active_date = ? WHERE id = 1', yesterday);
+}
 
 export async function recordLevelCleared(
   db: SQLiteDatabase,

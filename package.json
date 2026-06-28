@@ -29,6 +29,7 @@
     "expo-font": "~55.0.7",
     "expo-glass-effect": "~55.0.11",
     "expo-haptics": "~55.0.14",
+    "expo-iap": "^4.3.4",
     "expo-image": "~55.0.10",
     "expo-linking": "~55.0.15",
     "expo-router": "~55.0.14",

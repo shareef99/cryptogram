@@ -3,10 +3,11 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initAds } from '@/ads';
 import { HowToPlay } from '@/components/HowToPlay';
+import { ownsRemoveAds } from '@/iap';
 import { useResolvedScheme } from '@/hooks/use-theme';
 import { usePlayerStore } from '@/store/player-store';
 import { useSettingsStore } from '@/store/settings-store';
@@ -19,11 +20,20 @@ export default function RootLayout() {
     usePlayerStore.getState().hydrate().catch(() => {});
     useSettingsStore.getState().hydrate().catch(() => {});
     initAds();
+    // Re-grant a previously purchased "Remove Ads" entitlement (e.g. after a
+    // reinstall, where local settings are fresh). Only ever grants, never revokes.
+    ownsRemoveAds()
+      .then((owned) => {
+        if (owned) useSettingsStore.getState().setAdsRemoved(true);
+      })
+      .catch(() => {});
   }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
+      {/* initialMetrics seeds synchronous insets on the first frame so the
+          safe-area top padding doesn't pop in late and shift the header down. */}
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />

@@ -11,7 +11,13 @@
 /** Working database filename (in the on-device SQLite directory). */
 export const DB_NAME = 'cryptogram.db';
 
-/** Content schema/version shipped in the bundled asset. Mirrors build-db.ts. */
+/**
+ * Version of the bundled content (quotes). The single source of truth — both
+ * build-db.ts (stamps it into the asset's `meta`) and the runtime content sync
+ * import this. **Bump it whenever you rebuild the DB with new/changed quotes**:
+ * on the next launch after an app update, `syncContent` merges the new quotes
+ * into already-installed devices (which keep their old DB otherwise).
+ */
 export const CONTENT_VERSION = 1;
 
 /**
@@ -47,6 +53,22 @@ CREATE TABLE IF NOT EXISTS daily_activity (
   date           TEXT PRIMARY KEY,   -- local YYYY-MM-DD
   levels_cleared INTEGER NOT NULL DEFAULT 0,
   coins_earned   INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS daily_result (
+  date      TEXT PRIMARY KEY,   -- local YYYY-MM-DD of the daily challenge
+  quote_id  INTEGER NOT NULL,   -- the deterministic quote for that date
+  mistakes  INTEGER NOT NULL DEFAULT 0,
+  solved_at INTEGER             -- epoch ms when solved (null = started, not solved)
+);
+
+CREATE TABLE IF NOT EXISTS daily_month_reward (
+  month TEXT PRIMARY KEY        -- 'YYYY-MM' once its completion reward is granted
+);
+
+CREATE TABLE IF NOT EXISTS achievement (
+  id          TEXT PRIMARY KEY, -- matches a definition in game/achievements.ts
+  unlocked_at INTEGER NOT NULL  -- epoch ms
 );
 `;
 

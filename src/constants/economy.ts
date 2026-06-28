@@ -11,6 +11,12 @@ export const COIN_REWARD: Record<Difficulty, number> = { 1: 10, 2: 20, 3: 30, 4:
 /** Coin cost of Hint 1 ("Reveal") — reveals one chosen/random letter. */
 export const HINT1_COST = 15;
 
+/** Coins granted for watching a rewarded "free coins" ad on the home screen. */
+export const COIN_AD_BONUS = 25;
+
+/** How many cells Hint 2 ("Lucky Reveal") reveals — scarce, so it's splashy. */
+export const HINT2_REVEAL_COUNT = 3;
+
 /**
  * How many distinct letters to pre-reveal at the start of a puzzle, to give the
  * player a foothold. We reveal the MOST FREQUENT letters (they unlock the most
@@ -28,3 +34,6 @@ export const STREAK_MILESTONES: { day: number; coins: number; hint2: number }[] 
   { day: 14, coins: 150, hint2: 3 },
   { day: 30, coins: 400, hint2: 5 },
 ];
+
+/** One-time reward for completing every daily challenge in a calendar month. */
+export const DAILY_MONTH_REWARD = { coins: 250, hint2: 3 };

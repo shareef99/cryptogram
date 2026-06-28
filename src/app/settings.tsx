@@ -3,16 +3,20 @@
  */
 
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
 
+import { isPrivacyOptionsRequired, showPrivacyOptions } from '@/ads';
 import { SettingRow } from '@/components/settings/SettingRow';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PRIVACY_URL, TERMS_URL } from '@/constants/links';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getDatabase, resetProgress } from '@/db';
 import { useTheme } from '@/hooks/use-theme';
-import { IAP_AVAILABLE, purchaseRemoveAds } from '@/iap';
+import { IAP_AVAILABLE, purchaseRemoveAds, restoreRemoveAds } from '@/iap';
 import { usePlayerStore } from '@/store/player-store';
 import { useSettingsStore } from '@/store/settings-store';
 import { useUiStore } from '@/store/ui-store';
@@ -32,6 +36,8 @@ export default function SettingsScreen() {
   const setSoundEnabled = useSettingsStore((s) => s.setSoundEnabled);
   const adsRemoved = useSettingsStore((s) => s.adsRemoved);
   const setAdsRemoved = useSettingsStore((s) => s.setAdsRemoved);
+  // UMP requires an always-available way to re-open consent where it applies.
+  const [privacyOptions] = useState(() => isPrivacyOptionsRequired());
 
   const handleRemoveAds = async () => {
     if (await purchaseRemoveAds()) {
@@ -39,6 +45,15 @@ export default function SettingsScreen() {
       Alert.alert('Thanks!', 'Ads have been removed.');
     } else {
       Alert.alert('Unavailable', 'Purchases are not available in this build yet.');
+    }
+  };
+
+  const handleRestore = async () => {
+    if (await restoreRemoveAds()) {
+      await setAdsRemoved(true);
+      Alert.alert('Restored', 'Your “Remove ads” purchase has been restored.');
+    } else {
+      Alert.alert('Nothing to restore', 'No previous “Remove ads” purchase was found.');
     }
   };
 
@@ -113,6 +128,47 @@ export default function SettingsScreen() {
               <ThemedText style={styles.rowLabel}>Remove ads</ThemedText>
               <ThemedText themeColor={adsRemoved ? 'success' : 'primary'} style={styles.rowAction}>
                 {adsRemoved ? 'Removed ✓' : IAP_AVAILABLE ? 'Buy' : 'Soon'}
+              </ThemedText>
+            </Pressable>
+
+            {!adsRemoved && (
+              <>
+                <View style={[styles.divider, { backgroundColor: theme.cellBorder }]} />
+                <Pressable onPress={handleRestore} style={styles.rowButton}>
+                  <ThemedText style={styles.rowLabel}>Restore purchases</ThemedText>
+                  <ThemedText themeColor="primary" style={styles.rowAction}>
+                    Restore
+                  </ThemedText>
+                </Pressable>
+              </>
+            )}
+          </ThemedView>
+
+          {privacyOptions && (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <Pressable onPress={() => showPrivacyOptions()} style={styles.rowButton}>
+                <ThemedText style={styles.rowLabel}>Privacy choices</ThemedText>
+                <ThemedText themeColor="primary" style={styles.rowAction}>
+                  Manage
+                </ThemedText>
+              </Pressable>
+            </ThemedView>
+          )}
+
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <Pressable onPress={() => WebBrowser.openBrowserAsync(PRIVACY_URL)} style={styles.rowButton}>
+              <ThemedText style={styles.rowLabel}>Privacy Policy</ThemedText>
+              <ThemedText themeColor="primary" style={styles.rowAction}>
+                View
+              </ThemedText>
+            </Pressable>
+
+            <View style={[styles.divider, { backgroundColor: theme.cellBorder }]} />
+
+            <Pressable onPress={() => WebBrowser.openBrowserAsync(TERMS_URL)} style={styles.rowButton}>
+              <ThemedText style={styles.rowLabel}>Terms &amp; Conditions</ThemedText>
+              <ThemedText themeColor="primary" style={styles.rowAction}>
+                View
               </ThemedText>
             </Pressable>
           </ThemedView>

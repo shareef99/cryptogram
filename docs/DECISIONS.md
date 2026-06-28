@@ -105,8 +105,8 @@ gives Hint 1 a price.
   from a limited inventory (`player.hint2_count`), granted mainly via streak milestones.
   **Why:** User wants Hint 2 to feel like a genuine reward, so it must be scarce and not freely
   purchasable.
-  **Tunable (🔄):** Hint 2 reveals **one** letter in v1 (clean + scarce); can reveal several if
-  we want it splashier.
+  **Tunable (🔄):** Hint 2 reveals **3** cells (`HINT2_REVEAL_COUNT`) — splashier than Hint 1's
+  single reveal, fitting its scarcity (was 1 in early v1).
 
 ## D12 — Daily streaks & consistency rewards ✅ (milestones 🔄)
 
@@ -117,13 +117,18 @@ gives Hint 1 a price.
 special.
 **Detail:** Streak math compares local `YYYY-MM-DD` strings to avoid timezone/DST bugs.
 
-## D13 — Ads philosophy: non-intrusive, opt-in-first ✅
+## D13 — Ads philosophy: non-intrusive, opt-in-first ✅ (banner added 🔄)
 
 **Decision:** No forced mid-gameplay ads. Rewarded ads are opt-in (hints + "double your
 coins"). Interstitials are frequency-capped (≤1 per N puzzles + min time gap), shown only on
-win→next, never mid-puzzle. No banner on the puzzle screen.
+win→next, never mid-puzzle.
 **Why:** The whole motivation for building this is that the reference game shows forced
 interstitials between every stage. We monetize without that.
+**Revision (🔄):** A single **anchored adaptive banner** now sits below the keyboard on the
+puzzle screen (`src/ads/PlayBanner.tsx`). Banners are passive (no interruption, no covering the
+grid), which keeps the "non-intrusive" promise while adding steady fill. It is hidden when ads
+are removed via IAP and self-collapses on no-fill. Trade-off accepted: more ad surface raises
+the priority of the UMP consent flow (RELEASE.md §1) before an EEA launch.
 
 ## D14 — "Double your reward" ad & the 5-second-skip question ✅
 
@@ -192,10 +197,50 @@ selection gives volume _and_ quality without a popularity column.
 swap for a clean licensed/PD set before public launch (delete the bulk file +
 rebuild). Replaces the earlier quotable bootstrap.
 
+## D21 — Content sync for app updates ✅
+
+**Decision:** The bundled content DB only copies to the device on first launch, so
+shipping more quotes in an app update would never reach existing installs. On
+launch, `syncContent` (db/content-sync.ts) compares the bundled `CONTENT_VERSION`
+(now a single source of truth in db/schema.ts, imported by build-db.ts) against
+the version in the working DB's `meta` table; when newer, it stages a fresh copy
+of the bundled asset and **merges quotes additively, matched by text** — existing
+quotes keep their ids (so progress keyed by quote_id survives) and only new
+quotes are appended. Bump `CONTENT_VERSION` whenever rebuilding the DB.
+**Why:** Players (and us) need new quotes/features to land on already-installed
+devices without a reinstall and without wiping progress. Matching by text avoids
+depending on id stability across builds (build order can shift ids). Quotes
+dropped from a newer build are left in place (harmless) rather than deleted —
+simpler and safe for progress.
+**Caveat:** additive only; it won't prune removed quotes or edit changed ones (a
+typo fix reads as a new quote, orphaning the old). Acceptable for v1.
+
+## D22 — Expanded rewarded-ad placements (opt-in, value-add) ✅
+
+**Decision:** Beyond the two original rewarded ads (Double-it, and the
+loss-screen Continue), add four **opt-in** rewarded placements, each with its own
+AdMob unit for per-placement reporting (`src/ads/ad-config.ts`; `showRewarded`
+takes a unit id):
+
+- **Free Hint** — the bulb FAB pays coins when affordable, else watches an ad to
+  reveal a random cell.
+- **Lucky Reveal** — the sparkles FAB uses a held Hint 2, else watches an ad to
+  earn one.
+- **Coin Bonus** — a "Free coins" button on home → ad → `COIN_AD_BONUS` coins.
+- **Streak Freeze** — when a streak is one missed day from resetting
+  (`streakIsSavable`), the home offers an ad to bridge the gap (`freezeStreak`).
+
+**Why:** Rewarded ads are the highest-eCPM format AND player-initiated, so they
+add revenue while _improving_ UX (stuck/broke players get help; streaks get
+saved) — fully consistent with D13's non-intrusive philosophy. Per-placement
+units let us see which earn and prune later.
+**Rejected for now:** App Open ads (user dislike), more banners (parked),
+reveal-author ad, interstitial changes. "Double the daily reward" needs nothing —
+the existing Double-it already covers daily solves.
+
 ---
 
 ## Open items to resolve
 
 - **D8:** produce the public-domain quote corpus (extraction source + script).
-- **D11 (🔄):** confirm Hint 2 reveals one letter vs several.
 - Confirm default tuning numbers in **D10** (coin amounts) and **D12** (milestone days/rewards).

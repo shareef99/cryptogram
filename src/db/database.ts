@@ -8,6 +8,7 @@
 
 import * as SQLite from 'expo-sqlite';
 
+import { syncContent } from './content-sync';
 import { migrateUserData } from './migrate';
 import { DB_NAME, SEED_PLAYER_SQL, USER_TABLES_SQL } from './schema';
 
@@ -31,6 +32,9 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
   // Upgrade incompatible user data left by older app versions (e.g. resume
   // guesses from the pre-per-cell model). Safe/no-op once already current.
   await migrateUserData(db);
+  // Merge any quotes shipped since this device's DB was created (no-op on first
+  // launch and when already current). Keeps user progress intact.
+  await syncContent(db, DB_ASSET_ID);
   return db;
 }
 

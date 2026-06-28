@@ -1,6 +1,8 @@
 /**
- * Puzzle screen header: back button and remaining lives (hearts). The letter
- * count is intentionally hidden.
+ * Puzzle screen header: back button (left), remaining lives (center), and the
+ * coin balance (right). The three sections use equal-flex side columns so the
+ * centered hearts never move when the coin value's width changes on load.
+ * The letter count is intentionally hidden.
  */
 
 import { Ionicons } from '@expo/vector-icons';
@@ -23,18 +25,13 @@ function GameHeaderInner() {
 
   return (
     <View style={styles.header}>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.side}>
-        <Ionicons name="chevron-back" size={28} color={theme.text} />
-      </Pressable>
+      <View style={[styles.side, styles.left]}>
+        <Pressable onPress={() => router.back()} hitSlop={8}>
+          <Ionicons name="chevron-back" size={28} color={theme.text} />
+        </Pressable>
+      </View>
 
-      <Pressable
-        onLongPress={__DEV__ ? () => useGameStore.getState().__devSolve() : undefined}
-        style={styles.coins}>
-        <CoinIcon size={18} />
-        <ThemedText style={styles.coinText}>{coins}</ThemedText>
-      </Pressable>
-
-      <View style={[styles.side, styles.lives]}>
+      <View style={styles.lives}>
         {Array.from({ length: MAX_MISTAKES }).map((_, i) => (
           <Ionicons
             key={i}
@@ -43,6 +40,15 @@ function GameHeaderInner() {
             color={i < remaining ? theme.danger : theme.cellBorder}
           />
         ))}
+      </View>
+
+      <View style={[styles.side, styles.right]}>
+        <Pressable
+          onLongPress={__DEV__ ? () => useGameStore.getState().__devSolve() : undefined}
+          style={styles.coins}>
+          <CoinIcon size={18} />
+          <ThemedText style={styles.coinText}>{coins}</ThemedText>
+        </Pressable>
       </View>
     </View>
   );
@@ -54,12 +60,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
-  side: { minWidth: 88, height: 40, justifyContent: 'center' },
+  side: { flex: 1, height: 40, justifyContent: 'center' },
+  left: { alignItems: 'flex-start' },
+  right: { alignItems: 'flex-end' },
+  lives: { flexDirection: 'row', gap: 2 },
   coins: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   coinText: { fontSize: 18, fontWeight: '800' },
-  lives: { flexDirection: 'row', gap: 2, justifyContent: 'flex-end' },
 });

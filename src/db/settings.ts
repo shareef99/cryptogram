@@ -45,4 +45,5 @@ export const SETTING_KEYS = {
   themeMode: 'theme_mode',
   userDataVersion: 'user_data_version',
   onboardingSeen: 'onboarding_seen',
+  playCount: 'play_count', // advances the easy→medium→medium→hard rotation
 } as const;

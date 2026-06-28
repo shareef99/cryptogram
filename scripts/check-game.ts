@@ -25,6 +25,7 @@ import {
   unsolvedCodes,
   type Guesses,
 } from '../src/game';
+import { ACHIEVEMENTS, evaluateUnlocked } from '../src/game/achievements';
 
 let passed = 0;
 let failed = 0;
@@ -153,6 +154,32 @@ console.log('\nHints');
   }
   check('repeated reveals solve the puzzle', isSolved(puzzle, g));
   check('pickRandomUnsolvedCode returns null when solved', pickRandomUnsolvedCode(puzzle, g, rng) === null);
+}
+
+console.log('\nAchievements');
+{
+  const base = {
+    totalSolved: 0, currentStreak: 0, longestStreak: 0, dailyCount: 0,
+    mistakes: 3, timeSeconds: 200, difficulty: 1 as const,
+  };
+  // Fresh first solve, made a mistake, slow, easy → only "first_solve".
+  const first = evaluateUnlocked({ ...base, totalSolved: 1 });
+  check('first solve unlocks first_solve', first.includes('first_solve'));
+  check('mistakes block flawless', !first.includes('flawless'));
+  check('slow time blocks speed_demon', !first.includes('speed_demon'));
+
+  // Flawless + fast + long.
+  const ace = evaluateUnlocked({ ...base, totalSolved: 1, mistakes: 0, timeSeconds: 45, difficulty: 4 });
+  check('no mistakes unlocks flawless', ace.includes('flawless'));
+  check('sub-60s unlocks speed_demon', ace.includes('speed_demon'));
+  check('long puzzle unlocks marathoner', ace.includes('marathoner'));
+
+  // Milestone thresholds.
+  const veteran = evaluateUnlocked({ ...base, totalSolved: 100, longestStreak: 30, dailyCount: 7 });
+  check('100 solves unlocks solve_100', veteran.includes('solve_100'));
+  check('30-day streak unlocks streak_30', veteran.includes('streak_30'));
+  check('7 dailies unlocks daily_7', veteran.includes('daily_7'));
+  check('every achievement id is unique', new Set(ACHIEVEMENTS.map((a) => a.id)).size === ACHIEVEMENTS.length);
 }
 
 console.log(`\n${failed === 0 ? '✅' : '❌'} ${passed} passed, ${failed} failed\n`);

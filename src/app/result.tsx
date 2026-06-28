@@ -6,17 +6,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, Share, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { maybeShowInterstitial, showRewarded } from '@/ads';
 import { CoinIcon } from '@/components/CoinIcon';
+import { AchievementUnlockModal } from '@/components/meta/AchievementUnlockModal';
+import { MonthRewardModal } from '@/components/meta/MonthRewardModal';
 import { RewardModal } from '@/components/meta/RewardModal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { buildShareText } from '@/lib/share';
 import { usePlayerStore } from '@/store/player-store';
 import { useResultStore } from '@/store/result-store';
 import { useSettingsStore } from '@/store/settings-store';
@@ -31,6 +34,8 @@ export default function ResultScreen() {
   const [doubled, setDoubled] = useState(false);
   const [doubling, setDoubling] = useState(false);
   const [milestone, setMilestone] = useState(result?.milestone ?? null);
+  const [monthReward, setMonthReward] = useState(result?.monthReward ?? null);
+  const [achievements, setAchievements] = useState(result?.achievements ?? []);
 
   // No result in memory (e.g. deep-linked or reloaded) — bounce home.
   if (!result) return <Redirect href="/" />;
@@ -48,10 +53,24 @@ export default function ResultScreen() {
 
   const handleNext = async () => {
     await maybeShowInterstitial(adsRemoved, Date.now());
-    router.replace({
-      pathname: '/play/[id]',
-      params: { id: 'new', difficulty: String(result.difficulty) },
-    });
+    // No difficulty param — the next puzzle follows the auto-rotation.
+    router.replace({ pathname: '/play/[id]', params: { id: 'new' } });
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: buildShareText({
+          daily: result.daily,
+          difficulty: result.difficulty,
+          streak: result.streak,
+          mistakes: result.mistakes,
+          timeSeconds: result.timeSeconds,
+        }),
+      });
+    } catch {
+      /* user dismissed the share sheet */
+    }
   };
 
   return (
@@ -99,6 +118,13 @@ export default function ResultScreen() {
             </ThemedText>
           </Pressable>
 
+          <Pressable onPress={handleShare} style={[styles.button, styles.shareButton, { borderColor: theme.primary }]}>
+            <Ionicons name="share-social-outline" size={18} color={theme.primary} />
+            <ThemedText themeColor="primary" style={styles.buttonText}>
+              Share
+            </ThemedText>
+          </Pressable>
+
           <Pressable onPress={() => router.replace('/')} style={styles.homeButton}>
             <ThemedText themeColor="primary" style={styles.buttonText}>
               Home
@@ -107,6 +133,8 @@ export default function ResultScreen() {
         </View>
 
         <RewardModal milestone={milestone} onClose={() => setMilestone(null)} />
+        <MonthRewardModal reward={monthReward} onClose={() => setMonthReward(null)} />
+        <AchievementUnlockModal achievements={achievements} onClose={() => setAchievements([])} />
       </SafeAreaView>
     </ThemedView>
   );
@@ -124,6 +152,7 @@ const styles = StyleSheet.create({
   bottom: { gap: Spacing.three, paddingBottom: Spacing.four },
   earned: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one },
   earnedText: { fontSize: 24, fontWeight: '800' },
+  shareButton: { borderWidth: 2, flexDirection: 'row', gap: Spacing.two },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
