@@ -44,7 +44,7 @@ export async function initAds(): Promise<void> {
  * Load and show a rewarded ad. Resolves true only if the user watched to the
  * reward point; false if they skipped, it failed, or no fill. Never throws.
  */
-export function showRewarded(): Promise<boolean> {
+export function showRewarded(unitId: string = REWARDED_UNIT_ID): Promise<boolean> {
   if (!canRequestAds()) return Promise.resolve(false);
   return new Promise((resolve) => {
     let settled = false;
@@ -55,7 +55,7 @@ export function showRewarded(): Promise<boolean> {
       resolve(earned);
     };
 
-    const ad = RewardedAd.createForAdRequest(REWARDED_UNIT_ID, {
+    const ad = RewardedAd.createForAdRequest(unitId, {
       requestNonPersonalizedAdsOnly: true,
     });
     let earned = false;

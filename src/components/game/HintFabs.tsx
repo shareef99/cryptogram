@@ -21,25 +21,27 @@ import { HintFab } from './HintFab';
 
 function HintFabsInner({ hints }: { hints: ReturnType<typeof useHints> }) {
   const theme = useTheme();
+  const adReveal = !hints.canAffordReveal; // bulb falls back to a rewarded ad
+  const adLucky = hints.hint2Count <= 0; // sparkles falls back to a rewarded ad
   return (
     <View style={styles.stack}>
       <HintFab
         icon="bulb-outline"
         iconColor={theme.text}
-        onPress={hints.startReveal}
-        disabled={!hints.canAffordReveal}
-        badge={hints.revealCost}
-        badgeColor={theme.coin}
+        onPress={hints.onRevealPress}
+        disabled={hints.adLoading}
+        badge={adReveal ? 'AD' : hints.revealCost}
+        badgeColor={adReveal ? theme.primary : theme.coin}
       />
       <HintFab
         icon="sparkles"
         iconColor={theme.streak}
-        onPress={hints.luckyReveal}
+        onPress={hints.onLuckyPress}
         // Dev-only: long-press to grant Lucky Reveals for testing.
         onLongPress={__DEV__ ? () => usePlayerStore.getState().grantHint2(3) : undefined}
-        disabled={hints.hint2Count <= 0}
-        badge={hints.hint2Count}
-        badgeColor={theme.streak}
+        disabled={hints.adLoading}
+        badge={adLucky ? 'AD' : hints.hint2Count}
+        badgeColor={adLucky ? theme.primary : theme.streak}
       />
     </View>
   );

@@ -2,12 +2,16 @@
  * Coordinates the two hint types across the game store and the player economy.
  *
  * Hint 1 ("Reveal"): pay coins up front, then enter pick mode — tap a highlighted
- * cell to reveal it, or "Surprise me" for a random one. Cancelling refunds.
+ * cell to reveal it, or "Surprise me" for a random one. Cancelling refunds. When
+ * coins fall short, the same action instead offers a rewarded-ad reveal (random,
+ * no pick mode → no refund edge cases).
  * Hint 2 ("Lucky Reveal"): consume one scarce inventory item, reveal at random.
+ * When the inventory is empty, the action offers a rewarded ad to earn one.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
+import { REWARDED_FREE_HINT_UNIT_ID, REWARDED_LUCKY_UNIT_ID, showRewarded } from '@/ads';
 import { HINT1_COST } from '@/constants/economy';
 import { getDatabase, incrementHints } from '@/db';
 import { haptics } from '@/lib/haptics';
@@ -20,11 +24,15 @@ export function useHints(quoteId: number | null) {
   const trySpend = usePlayerStore((s) => s.trySpend);
   const awardCoins = usePlayerStore((s) => s.awardCoins);
   const tryConsumeHint2 = usePlayerStore((s) => s.tryConsumeHint2);
+  const grantHint2 = usePlayerStore((s) => s.grantHint2);
 
   const hintMode = useGameStore((s) => s.hintMode);
   const enterPickMode = useGameStore((s) => s.enterPickMode);
   const exitPickMode = useGameStore((s) => s.exitPickMode);
   const revealRandom = useGameStore((s) => s.revealRandom);
+
+  const [adLoading, setAdLoading] = useState(false);
+  const canAffordReveal = coins >= HINT1_COST;
 
   const bumpHints = useCallback(() => {
     if (quoteId != null) {
@@ -63,15 +71,53 @@ export function useHints(quoteId: number | null) {
     }
   }, [tryConsumeHint2, bumpHints, revealRandom]);
 
+  /** Free Hint (ad): can't afford coins → watch an ad to reveal a random cell. */
+  const revealViaAd = useCallback(async () => {
+    setAdLoading(true);
+    const earned = await showRewarded(REWARDED_FREE_HINT_UNIT_ID);
+    setAdLoading(false);
+    if (earned) {
+      haptics.light();
+      bumpHints();
+      revealRandom();
+    }
+  }, [bumpHints, revealRandom]);
+
+  /** Lucky Reveal (ad): empty inventory → watch an ad to earn one Hint 2. */
+  const earnLuckyViaAd = useCallback(async () => {
+    setAdLoading(true);
+    const earned = await showRewarded(REWARDED_LUCKY_UNIT_ID);
+    setAdLoading(false);
+    if (earned) {
+      haptics.success();
+      await grantHint2(1);
+    }
+  }, [grantHint2]);
+
+  /** Bulb action: pay coins if affordable, otherwise the ad reveal. */
+  const onRevealPress = useCallback(() => {
+    if (canAffordReveal) startReveal();
+    else revealViaAd();
+  }, [canAffordReveal, startReveal, revealViaAd]);
+
+  /** Sparkles action: use a Lucky Reveal if held, otherwise earn one via ad. */
+  const onLuckyPress = useCallback(() => {
+    if (hint2Count > 0) luckyReveal();
+    else earnLuckyViaAd();
+  }, [hint2Count, luckyReveal, earnLuckyViaAd]);
+
   return {
     coins,
     hint2Count,
     hintMode,
-    canAffordReveal: coins >= HINT1_COST,
+    canAffordReveal,
     revealCost: HINT1_COST,
+    adLoading,
     startReveal,
     surprise,
     cancelReveal,
     luckyReveal,
+    onRevealPress,
+    onLuckyPress,
   };
 }
