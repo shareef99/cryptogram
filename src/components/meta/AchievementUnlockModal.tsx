@@ -3,13 +3,13 @@
  * Lists each newly unlocked badge; tap anywhere or "Nice!" to dismiss.
  */
 
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from "react-native";
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import type { Achievement } from '@/types';
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { Spacing } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
+import type { Achievement } from "@/types";
 
 export function AchievementUnlockModal({
   achievements,
@@ -26,7 +26,9 @@ export function AchievementUnlockModal({
       <Pressable style={styles.backdrop} onPress={onClose}>
         <ThemedView type="backgroundElement" style={styles.card}>
           <ThemedText style={styles.heading}>
-            {achievements.length > 1 ? 'Achievements unlocked!' : 'Achievement unlocked!'}
+            {achievements.length > 1
+              ? "Achievements unlocked!"
+              : "Achievement unlocked!"}
           </ThemedText>
 
           <View style={styles.list}>
@@ -43,7 +45,10 @@ export function AchievementUnlockModal({
             ))}
           </View>
 
-          <Pressable onPress={onClose} style={[styles.button, { backgroundColor: theme.primary }]}>
+          <Pressable
+            onPress={onClose}
+            style={[styles.button, { backgroundColor: theme.primary }]}
+          >
             <ThemedText themeColor="primaryText" style={styles.buttonText}>
               Nice!
             </ThemedText>
@@ -57,24 +62,32 @@ export function AchievementUnlockModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: Spacing.four,
   },
   card: {
-    width: '100%',
+    width: "100%",
     maxWidth: 360,
     borderRadius: Spacing.four,
     padding: Spacing.five,
     gap: Spacing.three,
   },
-  heading: { fontSize: 22, fontWeight: '800', textAlign: 'center' },
+  heading: {
+    fontSize: 22,
+    fontWeight: "800",
+    textAlign: "center",
+  },
   list: { gap: Spacing.three },
-  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
-  emoji: { fontSize: 34 },
+  row: { flexDirection: "row", alignItems: "center", gap: Spacing.three },
+  emoji: { fontSize: 34, lineHeight: 40 },
   text: { flex: 1, gap: 2 },
-  title: { fontSize: 17, fontWeight: '700' },
-  button: { paddingVertical: Spacing.three, borderRadius: Spacing.four, alignItems: 'center' },
-  buttonText: { fontSize: 18, fontWeight: '700' },
+  title: { fontSize: 17, fontWeight: "700" },
+  button: {
+    paddingVertical: Spacing.three,
+    borderRadius: Spacing.four,
+    alignItems: "center",
+  },
+  buttonText: { fontSize: 18, fontWeight: "700" },
 });

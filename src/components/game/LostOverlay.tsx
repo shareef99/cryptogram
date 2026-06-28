@@ -103,7 +103,9 @@ const styles = StyleSheet.create({
   },
   cardWrap: { width: '100%', maxWidth: 360 },
   card: { borderRadius: Spacing.four, padding: Spacing.five, alignItems: 'center', gap: Spacing.two },
-  emoji: { fontSize: 52 },
+  // lineHeight must clear the glyph — ThemedText's default injects lineHeight 24,
+  // which would clip a 52px emoji.
+  emoji: { fontSize: 52, lineHeight: 60 },
   title: { fontSize: 26, fontWeight: '800' },
   subtitle: { textAlign: 'center', marginBottom: Spacing.two },
   continue: {

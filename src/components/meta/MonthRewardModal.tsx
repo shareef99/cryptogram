@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
   },
-  emoji: { fontSize: 56 },
+  emoji: { fontSize: 56, lineHeight: 64 },
   title: { fontSize: 26, fontWeight: '800', textAlign: 'center' },
   subtitle: { textAlign: 'center' },
   rewards: { flexDirection: 'row', gap: Spacing.five, marginVertical: Spacing.three },
