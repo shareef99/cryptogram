@@ -26,16 +26,26 @@ export function HalfwayBanner() {
 
   const [visible, setVisible] = useState(false);
   const firedRef = useRef(false);
+  // Whether we've observed the board below 50% this puzzle. Only a genuine
+  // crossing (below → ≥50% during play) fires the banner — so resuming a puzzle
+  // that's already past 50% (e.g. after a loss + reopen) never re-shows it.
+  const seenBelowRef = useRef(false);
 
   // Reset for each new puzzle.
   useEffect(() => {
     firedRef.current = false;
+    seenBelowRef.current = false;
     setVisible(false);
   }, [puzzleId]);
 
-  // Fire once on first crossing 50% (but not on a fully-solved board).
+  // Fire once, only when crossing 50% after having been below it.
   useEffect(() => {
-    if (firedRef.current || status !== 'playing' || fraction < 0.5 || fraction >= 1) return;
+    if (status !== 'playing') return;
+    if (fraction < 0.5) {
+      seenBelowRef.current = true; // arm — we've seen the board below halfway
+      return;
+    }
+    if (firedRef.current || !seenBelowRef.current || fraction >= 1) return;
     firedRef.current = true;
     setVisible(true);
     const t = setTimeout(() => setVisible(false), 2600);
