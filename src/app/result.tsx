@@ -53,10 +53,8 @@ export default function ResultScreen() {
 
   const handleNext = async () => {
     await maybeShowInterstitial(adsRemoved, Date.now());
-    router.replace({
-      pathname: '/play/[id]',
-      params: { id: 'new', difficulty: String(result.difficulty) },
-    });
+    // No difficulty param — the next puzzle follows the auto-rotation.
+    router.replace({ pathname: '/play/[id]', params: { id: 'new' } });
   };
 
   const handleShare = async () => {

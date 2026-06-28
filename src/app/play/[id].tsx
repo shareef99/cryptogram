@@ -28,6 +28,7 @@ import {
   getProgress,
   getQuoteById,
   getRandomUnsolvedQuote,
+  getSequencedUnsolvedQuote,
   grantMonthRewardIfComplete,
   parseGuesses,
   recordDailyResult,
@@ -128,7 +129,9 @@ export default function PlayScreen() {
           ? await getDailyQuote(db, daily)
           : which && which !== 'new'
             ? await getQuoteById(db, Number(which))
-            : await getRandomUnsolvedQuote(db, diff);
+            : diff
+              ? await getRandomUnsolvedQuote(db, diff)
+              : await getSequencedUnsolvedQuote(db);
         if (!row) {
           setError('No more puzzles — you solved them all!');
           return;

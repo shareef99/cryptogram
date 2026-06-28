@@ -23,20 +23,11 @@ import { todayString } from '@/lib/calendar';
 import { usePlayerStore } from '@/store/player-store';
 import { useSettingsStore } from '@/store/settings-store';
 import { useUiStore } from '@/store/ui-store';
-import type { Difficulty } from '@/types';
 
-const DIFFICULTIES: { value: Difficulty; label: string }[] = [
-  { value: 1, label: 'Easy' },
-  { value: 2, label: 'Medium' },
-  { value: 3, label: 'Hard' },
-  { value: 4, label: 'Long' },
-];
-
-function startPuzzle(difficulty?: Difficulty) {
-  router.push({
-    pathname: '/play/[id]',
-    params: { id: 'new', ...(difficulty ? { difficulty: String(difficulty) } : {}) },
-  });
+// Difficulty is no longer player-selected — Play auto-rotates easy/medium/hard
+// (see getSequencedUnsolvedQuote).
+function startPuzzle() {
+  router.push({ pathname: '/play/[id]', params: { id: 'new' } });
 }
 
 export default function HomeScreen() {
@@ -139,31 +130,16 @@ export default function HomeScreen() {
             </Pressable>
           )}
 
-          <View style={styles.quickPlay}>
-            <Pressable
-              onPress={() => startPuzzle()}
-              style={({ pressed }) => [
-                styles.playButton,
-                { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1 },
-              ]}>
-              <ThemedText themeColor="primaryText" style={styles.playLabel}>
-                {continueId != null ? 'New puzzle' : 'Play'}
-              </ThemedText>
-            </Pressable>
-            <View style={styles.difficultyRow}>
-              {DIFFICULTIES.map((d) => (
-                <Pressable
-                  key={d.value}
-                  onPress={() => startPuzzle(d.value)}
-                  style={({ pressed }) => [
-                    styles.chip,
-                    { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
-                  ]}>
-                  <ThemedText type="small">{d.label}</ThemedText>
-                </Pressable>
-              ))}
-            </View>
-          </View>
+          <Pressable
+            onPress={() => startPuzzle()}
+            style={({ pressed }) => [
+              styles.playButton,
+              { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1 },
+            ]}>
+            <ThemedText themeColor="primaryText" style={styles.playLabel}>
+              {continueId != null ? 'New puzzle' : 'Play'}
+            </ThemedText>
+          </Pressable>
 
           <View style={styles.statsRow}>
             <StatTile emoji="📚" value={String(solved)} label="Solved" />
@@ -219,14 +195,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   continueLabel: { fontSize: 17, fontWeight: '700' },
-  quickPlay: { gap: Spacing.three },
   playButton: { paddingVertical: Spacing.three, borderRadius: Spacing.four, alignItems: 'center' },
   playLabel: { fontSize: 19, fontWeight: '700' },
-  difficultyRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.two },
-  chip: {
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: 999,
-  },
   statsRow: { flexDirection: 'row', gap: Spacing.three, paddingTop: Spacing.one },
 });
