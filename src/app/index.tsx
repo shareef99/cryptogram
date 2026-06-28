@@ -4,11 +4,13 @@
  * / quick play → stats (progress + achievements). Data refreshes on focus.
  */
 
+import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { REWARDED_COIN_BONUS_UNIT_ID, showRewarded } from '@/ads';
 import { CoinIcon } from '@/components/CoinIcon';
 import { DailyCard } from '@/components/home/DailyCard';
 import { StatTile } from '@/components/home/StatTile';
@@ -17,6 +19,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getDailyResult, getDatabase, getInProgressQuote, getQuoteCounts, getUnlockedIds } from '@/db';
+import { COIN_AD_BONUS } from '@/constants/economy';
 import { ACHIEVEMENTS } from '@/game/achievements';
 import { useTheme } from '@/hooks/use-theme';
 import { todayString } from '@/lib/calendar';
@@ -36,9 +39,18 @@ export default function HomeScreen() {
   const [continueId, setContinueId] = useState<number | null>(null);
   const [dailyDone, setDailyDone] = useState(false);
   const [achUnlocked, setAchUnlocked] = useState(0);
+  const [coinAdLoading, setCoinAdLoading] = useState(false);
   const coins = usePlayerStore((s) => s.coins);
   const longestStreak = usePlayerStore((s) => s.longestStreak);
   const settingsHydrated = useSettingsStore((s) => s.hydrated);
+
+  // Rewarded "free coins": watch an ad → grant a small coin bonus.
+  const handleFreeCoins = useCallback(async () => {
+    setCoinAdLoading(true);
+    const earned = await showRewarded(REWARDED_COIN_BONUS_UNIT_ID);
+    setCoinAdLoading(false);
+    if (earned) await usePlayerStore.getState().awardCoins(COIN_AD_BONUS);
+  }, []);
 
   // First launch: show the how-to overlay once, then remember it.
   useEffect(() => {
@@ -83,20 +95,33 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.topBar}>
-          <Pressable
-            // Dev-only: long-press to grant coins + Lucky Reveals for testing.
-            onLongPress={
-              __DEV__
-                ? () => {
-                    usePlayerStore.getState().awardCoins(100);
-                    usePlayerStore.getState().grantHint2(3);
-                  }
-                : undefined
-            }
-            style={[styles.coinPill, { backgroundColor: theme.backgroundElement }]}>
-            <CoinIcon size={15} />
-            <ThemedText style={styles.coinText}>{coins}</ThemedText>
-          </Pressable>
+          <View style={styles.coinGroup}>
+            <Pressable
+              // Dev-only: long-press to grant coins + Lucky Reveals for testing.
+              onLongPress={
+                __DEV__
+                  ? () => {
+                      usePlayerStore.getState().awardCoins(100);
+                      usePlayerStore.getState().grantHint2(3);
+                    }
+                  : undefined
+              }
+              style={[styles.coinPill, { backgroundColor: theme.backgroundElement }]}>
+              <CoinIcon size={15} />
+              <ThemedText style={styles.coinText}>{coins}</ThemedText>
+            </Pressable>
+
+            <Pressable
+              onPress={handleFreeCoins}
+              disabled={coinAdLoading}
+              style={({ pressed }) => [
+                styles.freeCoins,
+                { backgroundColor: theme.coin, opacity: pressed || coinAdLoading ? 0.6 : 1 },
+              ]}>
+              <Ionicons name="play" size={12} color="#1a1205" />
+              <ThemedText style={styles.freeCoinsText}>Free coins</ThemedText>
+            </Pressable>
+          </View>
 
           <Pressable
             onPress={() => router.push('/settings')}
@@ -160,6 +185,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
     paddingBottom: Spacing.two,
   },
+  coinGroup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   coinPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -169,6 +195,15 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   coinText: { fontSize: 16, fontWeight: '700' },
+  freeCoins: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one + 2,
+    borderRadius: 999,
+  },
+  freeCoinsText: { fontSize: 13, fontWeight: '800', color: '#1a1205' },
   settingsButton: {
     width: 40,
     height: 40,
