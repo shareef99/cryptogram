@@ -54,21 +54,21 @@ export function LostOverlay({
                 styles.continue,
                 { backgroundColor: theme.coin, opacity: pressed || continuing ? 0.7 : 1 },
               ]}>
-              {continuing ? (
-                <ActivityIndicator color="#1a1205" />
-              ) : (
-                <Ionicons name="play-circle" size={22} color="#1a1205" />
-              )}
-              <View style={styles.continueText}>
+              <View style={styles.continueRow}>
+                {continuing ? (
+                  <ActivityIndicator color="#1a1205" />
+                ) : (
+                  <Ionicons name="play-circle" size={22} color="#1a1205" />
+                )}
                 <ThemedText style={[styles.continueTitle, styles.darkText]}>
                   {continuing ? 'Loading ad…' : 'Continue'}
                 </ThemedText>
-                {!continuing && (
-                  <ThemedText style={[styles.continueSub, styles.darkText]}>
-                    Watch a quick ad · keep your board + refill ❤❤❤
-                  </ThemedText>
-                )}
               </View>
+              {!continuing && (
+                <ThemedText style={[styles.continueSub, styles.darkText]}>
+                  Watch an ad to refill lives &amp; keep your board
+                </ThemedText>
+              )}
             </Pressable>
           )}
 
@@ -108,16 +108,15 @@ const styles = StyleSheet.create({
   subtitle: { textAlign: 'center', marginBottom: Spacing.two },
   continue: {
     alignSelf: 'stretch',
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
+    gap: 2,
     paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.three,
     borderRadius: Spacing.four,
   },
-  continueText: { alignItems: 'flex-start' },
+  continueRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   continueTitle: { fontSize: 18, fontWeight: '800' },
-  continueSub: { fontSize: 12, fontWeight: '600', opacity: 0.85 },
+  continueSub: { fontSize: 12, fontWeight: '600', opacity: 0.85, textAlign: 'center' },
   darkText: { color: '#1a1205' },
   restart: {
     alignSelf: 'stretch',
