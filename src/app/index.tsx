@@ -6,23 +6,32 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { REWARDED_COIN_BONUS_UNIT_ID, showRewarded } from '@/ads';
+import { REWARDED_COIN_BONUS_UNIT_ID, REWARDED_STREAK_FREEZE_UNIT_ID, showRewarded } from '@/ads';
 import { CoinIcon } from '@/components/CoinIcon';
 import { DailyCard } from '@/components/home/DailyCard';
 import { StatTile } from '@/components/home/StatTile';
 import { StreakHero } from '@/components/home/StreakHero';
+import { StreakFreezeModal } from '@/components/meta/StreakFreezeModal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { getDailyResult, getDatabase, getInProgressQuote, getQuoteCounts, getUnlockedIds } from '@/db';
+import {
+  freezeStreak,
+  getDailyResult,
+  getDatabase,
+  getInProgressQuote,
+  getQuoteCounts,
+  getUnlockedIds,
+} from '@/db';
 import { COIN_AD_BONUS } from '@/constants/economy';
 import { ACHIEVEMENTS } from '@/game/achievements';
 import { useTheme } from '@/hooks/use-theme';
 import { todayString } from '@/lib/calendar';
+import { streakIsSavable } from '@/lib/streak';
 import { usePlayerStore } from '@/store/player-store';
 import { useSettingsStore } from '@/store/settings-store';
 import { useUiStore } from '@/store/ui-store';
@@ -40,9 +49,14 @@ export default function HomeScreen() {
   const [dailyDone, setDailyDone] = useState(false);
   const [achUnlocked, setAchUnlocked] = useState(0);
   const [coinAdLoading, setCoinAdLoading] = useState(false);
+  const [freezePrompt, setFreezePrompt] = useState(false);
+  const [freezeLoading, setFreezeLoading] = useState(false);
   const coins = usePlayerStore((s) => s.coins);
+  const currentStreak = usePlayerStore((s) => s.currentStreak);
   const longestStreak = usePlayerStore((s) => s.longestStreak);
+  const lastActiveDate = usePlayerStore((s) => s.lastActiveDate);
   const settingsHydrated = useSettingsStore((s) => s.hydrated);
+  const freezeCheckedRef = useRef(false);
 
   // Rewarded "free coins": watch an ad → grant a small coin bonus.
   const handleFreeCoins = useCallback(async () => {
@@ -50,6 +64,28 @@ export default function HomeScreen() {
     const earned = await showRewarded(REWARDED_COIN_BONUS_UNIT_ID);
     setCoinAdLoading(false);
     if (earned) await usePlayerStore.getState().awardCoins(COIN_AD_BONUS);
+  }, []);
+
+  // Offer a streak freeze once per session when the streak is one missed day
+  // from resetting (fires after the player row hydrates).
+  useEffect(() => {
+    if (freezeCheckedRef.current) return;
+    if (streakIsSavable(currentStreak, lastActiveDate, todayString())) {
+      freezeCheckedRef.current = true;
+      setFreezePrompt(true);
+    }
+  }, [currentStreak, lastActiveDate]);
+
+  const handleFreezeStreak = useCallback(async () => {
+    setFreezeLoading(true);
+    const earned = await showRewarded(REWARDED_STREAK_FREEZE_UNIT_ID);
+    setFreezeLoading(false);
+    if (earned) {
+      const db = await getDatabase();
+      await freezeStreak(db);
+      await usePlayerStore.getState().hydrate();
+    }
+    setFreezePrompt(false);
   }, []);
 
   // First launch: show the how-to overlay once, then remember it.
@@ -170,6 +206,14 @@ export default function HomeScreen() {
             <StatTile emoji="🔥" value={String(longestStreak)} label="Best streak" />
           </View>
         </ScrollView>
+
+        <StreakFreezeModal
+          visible={freezePrompt}
+          streak={currentStreak}
+          loading={freezeLoading}
+          onSave={handleFreezeStreak}
+          onDismiss={() => setFreezePrompt(false)}
+        />
       </SafeAreaView>
     </ThemedView>
   );

@@ -8,7 +8,7 @@ import { copyFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { addDays, computeStreak, localDateString } from '../src/lib/streak';
+import { addDays, computeStreak, localDateString, streakIsSavable } from '../src/lib/streak';
 import { USER_TABLES_SQL, SEED_PLAYER_SQL } from '../src/db/schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -34,6 +34,15 @@ check('same day is no-op', computeStreak('2026-06-22', 5, '2026-06-22').isNewAct
 check('same day keeps streak', computeStreak('2026-06-22', 5, '2026-06-22').streak === 5);
 check('gap resets to 1', computeStreak('2026-06-19', 9, '2026-06-22').streak === 1);
 check('gap is a new active day', computeStreak('2026-06-19', 9, '2026-06-22').isNewActiveDay === true);
+
+console.log('\nstreakIsSavable (one missed day)');
+// today = 2026-06-22. Savable only when last active = 2026-06-20 (missed the 21st).
+check('savable when exactly yesterday missed', streakIsSavable(5, '2026-06-20', '2026-06-22') === true);
+check('not savable when active yesterday', streakIsSavable(5, '2026-06-21', '2026-06-22') === false);
+check('not savable when active today', streakIsSavable(5, '2026-06-22', '2026-06-22') === false);
+check('not savable when gap too large', streakIsSavable(5, '2026-06-19', '2026-06-22') === false);
+check('not savable with no streak', streakIsSavable(0, '2026-06-20', '2026-06-22') === false);
+check('not savable with no history', streakIsSavable(3, null, '2026-06-22') === false);
 
 console.log('\ndaily_activity upsert SQL');
 {
