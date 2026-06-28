@@ -14,6 +14,9 @@ export const HINT1_COST = 15;
 /** Coins granted for watching a rewarded "free coins" ad on the home screen. */
 export const COIN_AD_BONUS = 25;
 
+/** How many cells Hint 2 ("Lucky Reveal") reveals — scarce, so it's splashy. */
+export const HINT2_REVEAL_COUNT = 3;
+
 /**
  * How many distinct letters to pre-reveal at the start of a puzzle, to give the
  * player a foothold. We reveal the MOST FREQUENT letters (they unlock the most

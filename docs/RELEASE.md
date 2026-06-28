@@ -14,15 +14,21 @@ test ads; release builds serve the real units.** Registered test devices (see
 `TEST_DEVICE_IDS` and the AdMob dashboard) still get test-mode ads in release, so
 QA is safe.
 
-**Android — done.** Real App ID (`app.json` → `androidAppId`) and the real
-Rewarded / Interstitial unit ids (`REAL_REWARDED` / `REAL_INTERSTITIAL`) are
-wired in (AdMob app `ca-app-pub-7019308769438850`).
+**Android — done.** Real App ID (`app.json` → `androidAppId`) and all real unit
+ids are wired in (AdMob app `ca-app-pub-7019308769438850`):
+
+- **Banner** (`REAL_BANNER`) — play screen.
+- **Interstitial** (`REAL_INTERSTITIAL`) — win→next, frequency-capped.
+- **Rewarded** (`REAL_REWARDED`) — Double-it + loss-screen Continue.
+- **Rewarded, per-placement** (D22): Free Hint, Coin Bonus, Lucky Reveal, Streak
+  Freeze — separate units for per-placement revenue reporting.
 
 **Still to do:**
 
-1. **iOS:** create an iOS app + Rewarded/Interstitial units in AdMob. Set the
-   real `iosAppId` in `app.json` (still the Google test id today) and make the
-   unit ids platform-aware (`Platform.select`) in `ad-config.ts`.
+1. **iOS:** create an iOS app + the full unit set (banner, interstitial, and all
+   rewarded placements) in AdMob. Set the real `iosAppId` in `app.json` (still the
+   Google test id today) and make the unit ids platform-aware (`Platform.select`)
+   in `ad-config.ts`.
 2. **Test devices:** on the first real-ad load, copy the hashed device id the
    native log prints (`setTestDeviceIds(Arrays.asList("…"))`) into
    `TEST_DEVICE_IDS` for belt-and-suspenders with the dashboard registration.

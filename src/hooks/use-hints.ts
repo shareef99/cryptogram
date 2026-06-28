@@ -12,7 +12,7 @@
 import { useCallback, useState } from 'react';
 
 import { REWARDED_FREE_HINT_UNIT_ID, REWARDED_LUCKY_UNIT_ID, showRewarded } from '@/ads';
-import { HINT1_COST } from '@/constants/economy';
+import { HINT1_COST, HINT2_REVEAL_COUNT } from '@/constants/economy';
 import { getDatabase, incrementHints } from '@/db';
 import { haptics } from '@/lib/haptics';
 import { useGameStore } from '@/store/game-store';
@@ -62,12 +62,15 @@ export function useHints(quoteId: number | null) {
     await awardCoins(HINT1_COST);
   }, [exitPickMode, awardCoins]);
 
-  /** Hint 2: consume a Lucky Reveal and reveal a random cell. */
+  /** Hint 2: consume a Lucky Reveal and reveal several random cells at once. */
   const luckyReveal = useCallback(async () => {
     if (await tryConsumeHint2()) {
       haptics.light();
       bumpHints();
-      revealRandom();
+      // Reveal up to HINT2_REVEAL_COUNT cells (fewer if the puzzle's nearly done).
+      for (let i = 0; i < HINT2_REVEAL_COUNT; i++) {
+        if (revealRandom() === null) break;
+      }
     }
   }, [tryConsumeHint2, bumpHints, revealRandom]);
 

@@ -105,8 +105,8 @@ gives Hint 1 a price.
   from a limited inventory (`player.hint2_count`), granted mainly via streak milestones.
   **Why:** User wants Hint 2 to feel like a genuine reward, so it must be scarce and not freely
   purchasable.
-  **Tunable (🔄):** Hint 2 reveals **one** letter in v1 (clean + scarce); can reveal several if
-  we want it splashier.
+  **Tunable (🔄):** Hint 2 reveals **3** cells (`HINT2_REVEAL_COUNT`) — splashier than Hint 1's
+  single reveal, fitting its scarcity (was 1 in early v1).
 
 ## D12 — Daily streaks & consistency rewards ✅ (milestones 🔄)
 
@@ -215,10 +215,32 @@ simpler and safe for progress.
 **Caveat:** additive only; it won't prune removed quotes or edit changed ones (a
 typo fix reads as a new quote, orphaning the old). Acceptable for v1.
 
+## D22 — Expanded rewarded-ad placements (opt-in, value-add) ✅
+
+**Decision:** Beyond the two original rewarded ads (Double-it, and the
+loss-screen Continue), add four **opt-in** rewarded placements, each with its own
+AdMob unit for per-placement reporting (`src/ads/ad-config.ts`; `showRewarded`
+takes a unit id):
+
+- **Free Hint** — the bulb FAB pays coins when affordable, else watches an ad to
+  reveal a random cell.
+- **Lucky Reveal** — the sparkles FAB uses a held Hint 2, else watches an ad to
+  earn one.
+- **Coin Bonus** — a "Free coins" button on home → ad → `COIN_AD_BONUS` coins.
+- **Streak Freeze** — when a streak is one missed day from resetting
+  (`streakIsSavable`), the home offers an ad to bridge the gap (`freezeStreak`).
+
+**Why:** Rewarded ads are the highest-eCPM format AND player-initiated, so they
+add revenue while _improving_ UX (stuck/broke players get help; streaks get
+saved) — fully consistent with D13's non-intrusive philosophy. Per-placement
+units let us see which earn and prune later.
+**Rejected for now:** App Open ads (user dislike), more banners (parked),
+reveal-author ad, interstitial changes. "Double the daily reward" needs nothing —
+the existing Double-it already covers daily solves.
+
 ---
 
 ## Open items to resolve
 
 - **D8:** produce the public-domain quote corpus (extraction source + script).
-- **D11 (🔄):** confirm Hint 2 reveals one letter vs several.
 - Confirm default tuning numbers in **D10** (coin amounts) and **D12** (milestone days/rewards).
