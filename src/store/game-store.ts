@@ -55,6 +55,8 @@ type GameState = {
   revealRandom: () => number | null;
   enterPickMode: () => void;
   exitPickMode: () => void;
+  /** After a loss: keep the filled board, refill lives, and resume (ad continue). */
+  revive: () => void;
   /** Dev-only: instantly solve the current puzzle. */
   __devSolve: () => void;
   reset: () => void;
@@ -247,6 +249,19 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (get().status === 'playing') set({ hintMode: 'pick' });
   },
   exitPickMode: () => set({ hintMode: 'idle' }),
+
+  revive: () => {
+    const { puzzle, cellGuesses, status } = get();
+    if (!puzzle || status !== 'lost') return;
+    // Keep all solved cells; refill lives and continue from the next blank.
+    set({
+      mistakes: 0,
+      wrongCellId: null,
+      status: 'playing',
+      selectedCellId: nextUnsolvedCellId(puzzle, cellGuesses, -1),
+      hintMode: 'idle',
+    });
+  },
 
   __devSolve: () => {
     const { puzzle } = get();

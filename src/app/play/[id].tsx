@@ -2,19 +2,20 @@
  * Puzzle screen. Loads a quote from the DB (a specific id, or a fresh random
  * unsolved one for "new"), builds the puzzle into the game store, and renders
  * the header + scrollable grid + keyboard. On solve it records rewards and
- * routes to the result screen; running out of lives shows a lost banner.
+ * routes to the result screen; running out of lives shows a rewarded-continue
+ * overlay (watch an ad to refill lives + keep progress).
  */
 
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import Animated, { ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PlayBanner } from '@/ads';
+import { canRequestAds, PlayBanner, showRewarded } from '@/ads';
 import { GameHeader } from '@/components/game/GameHeader';
 import { HalfwayBanner } from '@/components/game/HalfwayBanner';
 import { HintFabs } from '@/components/game/HintFabs';
+import { LostOverlay } from '@/components/game/LostOverlay';
 import { HintPickBar } from '@/components/game/HintPickBar';
 import { Keyboard } from '@/components/game/Keyboard';
 import { PuzzleGrid } from '@/components/game/PuzzleGrid';
@@ -59,6 +60,7 @@ export default function PlayScreen() {
   const [author, setAuthor] = useState<string | null>(null);
   const [quoteId, setQuoteId] = useState<number | null>(null);
   const [puzzleDifficulty, setPuzzleDifficulty] = useState<Difficulty>(1);
+  const [reviving, setReviving] = useState(false);
 
   const puzzle = useGameStore((s) => s.puzzle);
   const status = useGameStore((s) => s.status);
@@ -160,6 +162,15 @@ export default function PlayScreen() {
     return () => reset();
   }, [id, loadPuzzle, reset]);
 
+  // Rewarded "continue" after a loss: watch an ad to refill lives and keep the
+  // board you've filled in so far. Skipping/no-fill leaves the overlay up.
+  const handleReviveAd = useCallback(async () => {
+    setReviving(true);
+    const earned = await showRewarded();
+    setReviving(false);
+    if (earned) useGameStore.getState().revive();
+  }, []);
+
   return (
     <ThemedView style={styles.container}>
       {/* Insets from the hook (not the SafeAreaView component) so the header's
@@ -196,26 +207,13 @@ export default function PlayScreen() {
         </View>
 
         {status === 'lost' && (
-          <Animated.View
-            entering={ZoomIn.springify().damping(14)}
-            style={[styles.banner, { backgroundColor: theme.danger }]}>
-            <ThemedText themeColor="primaryText" style={styles.bannerTitle}>
-              Out of guesses 😕
-            </ThemedText>
-            <ThemedText themeColor="primaryText" style={styles.bannerSub}>
-              Better luck on the next one!
-            </ThemedText>
-            <Pressable
-              onPress={() => loadPuzzle(quoteId != null ? String(quoteId) : 'new', { fresh: true })}
-              style={[styles.button, styles.whiteButton]}>
-              <ThemedText style={[styles.buttonText, { color: theme.danger }]}>Try again</ThemedText>
-            </Pressable>
-            <Pressable onPress={() => router.replace('/')} style={[styles.button, styles.bannerGhost]}>
-              <ThemedText themeColor="primaryText" style={styles.buttonText}>
-                Back home
-              </ThemedText>
-            </Pressable>
-          </Animated.View>
+          <LostOverlay
+            canContinue={canRequestAds()}
+            continuing={reviving}
+            onContinue={handleReviveAd}
+            onRestart={() => loadPuzzle(quoteId != null ? String(quoteId) : 'new', { fresh: true })}
+            onHome={() => router.replace('/')}
+          />
         )}
 
         {!loading && !error && status === 'playing' && (
@@ -241,15 +239,6 @@ const styles = StyleSheet.create({
   errorText: { textAlign: 'center' },
   gridArea: { flex: 1, position: 'relative' },
   floatingHints: { position: 'absolute', right: Spacing.three, bottom: Spacing.three },
-  banner: {
-    margin: Spacing.three,
-    padding: Spacing.four,
-    borderRadius: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  bannerTitle: { fontSize: 24, fontWeight: '800' },
-  bannerSub: { fontSize: 16 },
   controls: { gap: Spacing.three, paddingVertical: Spacing.two },
   button: {
     alignSelf: 'stretch',
@@ -258,7 +247,5 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.four,
     alignItems: 'center',
   },
-  whiteButton: { backgroundColor: '#ffffff', marginTop: Spacing.two },
-  bannerGhost: { backgroundColor: 'rgba(255,255,255,0.18)' },
   buttonText: { fontSize: 17, fontWeight: '700' },
 });
