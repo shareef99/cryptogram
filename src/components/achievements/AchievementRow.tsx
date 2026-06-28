@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   },
   locked: { opacity: 0.55 },
   badge: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  emoji: { fontSize: 24 },
+  emoji: { fontSize: 24, lineHeight: 30 },
   text: { flex: 1, gap: 2 },
   title: { fontSize: 17, fontWeight: '700' },
 });

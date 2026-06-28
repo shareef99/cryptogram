@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.four,
   },
   flameCircle: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
-  flame: { fontSize: 30 },
+  flame: { fontSize: 30, lineHeight: 38 },
   body: { flex: 1, gap: Spacing.one + 2 },
   topRow: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
   count: { fontSize: 30, fontWeight: '900', lineHeight: 32 },

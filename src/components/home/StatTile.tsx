@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
-  emoji: { fontSize: 20 },
+  emoji: { fontSize: 20, lineHeight: 26 },
   value: { fontSize: 20, fontWeight: '800' },
   label: { textAlign: 'center' },
 });

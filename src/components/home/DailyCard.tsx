@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.four,
     borderRadius: Spacing.four,
   },
-  emoji: { fontSize: 28 },
+  emoji: { fontSize: 28, lineHeight: 34 },
   text: { flex: 1, gap: 2 },
   title: { fontSize: 18, fontWeight: '800' },
   subOnPrimary: { opacity: 0.9 },
