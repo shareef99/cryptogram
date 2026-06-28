@@ -117,27 +117,20 @@ export default function HomeScreen() {
           <StreakHero />
           <DailyCard done={dailyDone} />
 
-          {continueId != null && (
-            <Pressable
-              onPress={() => router.push({ pathname: '/play/[id]', params: { id: String(continueId) } })}
-              style={({ pressed }) => [
-                styles.continueButton,
-                { borderColor: theme.primary, opacity: pressed ? 0.85 : 1 },
-              ]}>
-              <ThemedText themeColor="primary" style={styles.continueLabel}>
-                Continue last puzzle
-              </ThemedText>
-            </Pressable>
-          )}
-
+          {/* An unfinished puzzle must be completed (or lost) before a new one —
+              so we show only Continue while one is in progress, never "New puzzle". */}
           <Pressable
-            onPress={() => startPuzzle()}
+            onPress={() =>
+              continueId != null
+                ? router.push({ pathname: '/play/[id]', params: { id: String(continueId) } })
+                : startPuzzle()
+            }
             style={({ pressed }) => [
               styles.playButton,
               { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1 },
             ]}>
             <ThemedText themeColor="primaryText" style={styles.playLabel}>
-              {continueId != null ? 'New puzzle' : 'Play'}
+              {continueId != null ? 'Continue puzzle' : 'Play'}
             </ThemedText>
           </Pressable>
 
@@ -188,13 +181,6 @@ const styles = StyleSheet.create({
   brand: { alignItems: 'center', gap: 2, paddingTop: Spacing.three, paddingBottom: Spacing.one },
   title: { fontSize: 38, lineHeight: 44, fontWeight: '900', textAlign: 'center' },
   subtitle: { textAlign: 'center' },
-  continueButton: {
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.four,
-    alignItems: 'center',
-    borderWidth: 2,
-  },
-  continueLabel: { fontSize: 17, fontWeight: '700' },
   playButton: { paddingVertical: Spacing.three, borderRadius: Spacing.four, alignItems: 'center' },
   playLabel: { fontSize: 19, fontWeight: '700' },
   statsRow: { flexDirection: 'row', gap: Spacing.three, paddingTop: Spacing.one },
