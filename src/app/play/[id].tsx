@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PlayBanner } from '@/ads';
 import { GameHeader } from '@/components/game/GameHeader';
+import { HalfwayBanner } from '@/components/game/HalfwayBanner';
 import { HintFabs } from '@/components/game/HintFabs';
 import { HintPickBar } from '@/components/game/HintPickBar';
 import { Keyboard } from '@/components/game/Keyboard';
@@ -190,6 +191,8 @@ export default function PlayScreen() {
               <HintFabs hints={hints} />
             </View>
           )}
+
+          <HalfwayBanner />
         </View>
 
         {status === 'lost' && (
